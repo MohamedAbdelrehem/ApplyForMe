@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#F5F2EC"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="ApplyForMe"/>
+  <meta name="description" content="Paste a LinkedIn job post, get a ready-to-send email draft instantly."/>
+  <title>ApplyForMe</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══════════════════════════════════════════ HOME ═══ -->
+  <div class="screen active" id="screen-home">
+
+    <div class="app-hdr">
+      <div class="app-logo">Apply<span>ForMe</span></div>
+    </div>
+
+    <div class="home-hero">
+      <div class="home-greeting">Hey, <em id="greeting-name">there</em> 👋</div>
+      <div class="home-sub">Paste a job post — get a tailored email in seconds.</div>
+    </div>
+
+    <!-- Android install banner -->
+    <div id="install-banner">
+      <div class="ib-txt">
+        <div class="ib-ttl">Add to Home Screen</div>
+        <div class="ib-sub">Install for instant access</div>
+      </div>
+      <button class="ib-btn" onclick="installApp()">Install</button>
+      <span class="ib-x" onclick="dismissInstall()">×</span>
+    </div>
+
+    <!-- iOS install banner -->
+    <div id="ios-banner">
+      <div class="ios-top">
+        <div class="ios-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C84B2F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v14M8 6l4-4 4 4"/><path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/></svg>
+        </div>
+        <div style="flex:1">
+          <div class="ios-ttl">Install ApplyForMe</div>
+          <div class="ios-sub">Add to your iPhone home screen</div>
+        </div>
+        <span class="ios-x" onclick="dismissIos()">×</span>
+      </div>
+      <div class="ios-steps">
+        <div class="ios-step"><span class="ios-num">1</span>Tap the <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline;vertical-align:-2px;margin:0 2px"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> <strong>Share</strong> button in Safari</div>
+        <div class="ios-step"><span class="ios-num">2</span>Tap <strong>Add to Home Screen</strong></div>
+        <div class="ios-step"><span class="ios-num">3</span>Tap <strong>Add</strong> — done!</div>
+      </div>
+    </div>
+
+    <!-- URL input -->
+    <div class="url-bar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A09890" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <input id="url-input" type="url" inputmode="url" placeholder="Paste LinkedIn URL or job description…" autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <button class="fetch-btn" id="fetch-btn" onclick="fetchPost()">Fetch →</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="fetch-ind" id="fetch-ind">
+      <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      <div>
+        <div class="fetch-txt">Analyzing post…</div>
+        <div class="fetch-step" id="fetch-step">Connecting…</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat hi"><div class="stat-n" id="stat-drafts">0</div><div class="stat-l">Drafts</div></div>
+      <div class="stat"><div class="stat-n" id="stat-sent">0</div><div class="stat-l">Sent</div></div>
+      <div class="stat"><div class="stat-n" id="stat-scheduled">0</div><div class="stat-l">Scheduled</div></div>
+    </div>
+
+    <div class="sec-lbl">Draft emails</div>
+    <div class="cards-wrap" id="cards-wrap"></div>
+
+    <div class="empty" id="empty-state">
+      <div class="empty-ico">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A09890" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div class="empty-ttl">No drafts yet</div>
+      <div class="empty-sub">Paste a LinkedIn job post above.<br>Gemini will write your email.</div>
+    </div>
+    <div style="height:16px"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ SAVED LINKS ═══ -->
+  <div class="screen" id="screen-links">
+    <div class="app-hdr">
+      <div class="app-logo">Apply<span>ForMe</span></div>
+    </div>
+    <div class="links-hdr">
+      <div class="links-ttl">Saved posts</div>
+    </div>
+    <div id="links-list"></div>
+    <div class="empty-links" id="empty-links">
+      <div class="empty-ico">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A09890" stroke-width="1.8" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="empty-ttl">No saved posts</div>
+      <div class="empty-sub">Job posts you fetch are saved here automatically.</div>
+    </div>
+    <div style="height:16px"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ PROFILE ═══ -->
+  <div class="screen" id="screen-settings">
+    <div class="app-hdr">
+      <div class="app-logo">Apply<span>ForMe</span></div>
+    </div>
+
+    <div class="set-hdr">
+      <div class="set-ttl">Profile</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="autofill-btn" id="autofill-btn" onclick="autofillFromCv()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          Autofill CV
+        </div>
+        <div class="save-lnk" onclick="saveProfile()">Save</div>
+      </div>
+    </div>
+
+    <div id="cv-upload-box" class="cv-box">
+      <div class="cv-ic">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C84B2F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="cv-ttl">Upload your CV</div>
+      <div class="cv-sub">PDF or DOCX · Gemini auto-fills your profile</div>
+    </div>
+    <input type="file" id="cv-file" accept=".pdf,.doc,.docx" style="display:none"/>
+
+    <div id="cv-done" class="cv-done">
+      <div class="cv-done-ic" id="cv-done-ic">
+        <svg id="cv-icon-file" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2D7A4F" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <svg id="cv-icon-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A0620A" stroke-width="2.5" stroke-linecap="round" style="display:none;animation:spin 0.9s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="cv-fn" id="cv-fn">your_cv.pdf</div>
+        <div class="cv-sz" id="cv-sz">Ready</div>
+      </div>
+      <div class="cv-chg" id="cv-chg" onclick="changeCv()">Change</div>
+    </div>
+
+    <div class="sec-lbl" style="margin-top:4px">Personal info</div>
+    <div class="form-s">
+      <div class="row2">
+        <div class="fg"><label class="fl" for="pf-firstName">First name</label><input class="fi" id="pf-firstName" type="text" placeholder="Mohamed" autocomplete="given-name"/></div>
+        <div class="fg"><label class="fl" for="pf-lastName">Last name</label><input class="fi" id="pf-lastName" type="text" placeholder="Abdelrehem" autocomplete="family-name"/></div>
+      </div>
+      <div class="fg"><label class="fl" for="pf-email">Email</label><input class="fi" id="pf-email" type="email" placeholder="you@email.com" autocomplete="email" inputmode="email"/></div>
+      <div class="row2">
+        <div class="fg"><label class="fl" for="pf-phone">Phone</label><input class="fi" id="pf-phone" type="tel" placeholder="+20 100 000 0000" autocomplete="tel" inputmode="tel"/></div>
+        <div class="fg"><label class="fl" for="pf-dob">Date of birth</label><input class="fi" id="pf-dob" type="date"/></div>
+      </div>
+      <div class="row2">
+        <div class="fg"><label class="fl" for="pf-city">City</label><input class="fi" id="pf-city" type="text" placeholder="Cairo" autocomplete="address-level2"/></div>
+        <div class="fg"><label class="fl" for="pf-country">Country</label><input class="fi" id="pf-country" type="text" placeholder="Egypt" autocomplete="country-name"/></div>
+      </div>
+      <div class="fg"><label class="fl" for="pf-nationality">Nationality</label><input class="fi" id="pf-nationality" type="text" placeholder="Egyptian"/></div>
+    </div>
+
+    <div class="sec-div"></div>
+    <div class="sec-lbl">Professional info</div>
+    <div class="form-s">
+      <div class="fg"><label class="fl" for="pf-currentTitle">Current job title</label><input class="fi" id="pf-currentTitle" type="text" placeholder="QA Automation Specialist"/></div>
+      <div class="row2">
+        <div class="fg"><label class="fl" for="pf-yearsExp">Years exp.</label><input class="fi" id="pf-yearsExp" type="number" min="0" max="50" placeholder="4" inputmode="numeric"/></div>
+        <div class="fg"><label class="fl" for="pf-linkedinUrl">LinkedIn</label><input class="fi" id="pf-linkedinUrl" type="url" placeholder="linkedin.com/in/…" inputmode="url"/></div>
+      </div>
+      <div class="fg"><label class="fl" for="pf-skills">Key skills</label><input class="fi" id="pf-skills" type="text" placeholder="Python, Playwright, Selenium, ISTQB"/></div>
+      <div class="fg"><label class="fl" for="pf-coverTemplate">Cover letter hint</label><textarea class="fi" id="pf-coverTemplate" rows="3" placeholder="Any tone or style notes for your emails…"></textarea></div>
+    </div>
+
+    <button class="save-btn" onclick="saveProfile()">Save profile</button>
+    <div style="height:16px"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════ SCHEDULE SHEET ═══ -->
+  <div id="overlay">
+    <div class="sheet">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Schedule send</div>
+      <div class="sh-sub">When should this email go out?</div>
+      <div class="sched-grid">
+        <div class="sopt" onclick="selectOpt(this,'now')"><div class="sopt-l">Send</div><div class="sopt-v">Right now</div></div>
+        <div class="sopt sel" onclick="selectOpt(this,'morning')"><div class="sopt-l">Tomorrow</div><div class="sopt-v">9:00 AM</div></div>
+        <div class="sopt" onclick="selectOpt(this,'afternoon')"><div class="sopt-l">Tomorrow</div><div class="sopt-v">2:00 PM</div></div>
+        <div class="sopt" onclick="selectOpt(this,'custom')"><div class="sopt-l">Custom</div><div class="sopt-v">Pick time →</div></div>
+      </div>
+      <div class="custom-row" id="custom-row">
+        <input type="date" class="t-inp" id="custom-date" style="flex:1.4"/>
+        <input type="time" class="t-inp" id="custom-time" value="09:00"/>
+      </div>
+      <div class="tip-box">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        "Right now" opens your mail app with CV pre-attached and draft pre-filled.
+      </div>
+      <button class="sh-cta" onclick="confirmSched()">Confirm</button>
+      <button class="sh-cancel" onclick="closeSched()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ TAB BAR ═══ -->
+  <div id="tabbar">
+    <div class="tab active" id="tab-home" onclick="switchTab('home')">
+      <div class="tab-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#C84B2F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><rect x="9" y="14" width="6" height="7" rx="1"/></svg>
+      </div>
+      <span class="tab-lbl">Home</span>
+    </div>
+    <div class="tab" id="tab-links" onclick="switchTab('links')">
+      <div class="tab-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#A09890" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <span class="tab-lbl">Saved</span>
+    </div>
+    <div class="tab" id="tab-settings" onclick="switchTab('settings')">
+      <div class="tab-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#A09890" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.87 3.58-7 8-7s8 3.13 8 7"/></svg>
+      </div>
+      <span class="tab-lbl">Profile</span>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
