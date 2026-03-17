@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box; margin: 0; padding: 0;
@@ -39,8 +39,8 @@
   --r-lg:   14px;
   --r-xl:   20px;
   --r-full: 999px;
-  --fd: 'Syne', sans-serif;
-  --fb: 'Instrument Sans', sans-serif;
+  --fd: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --fb: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --sb: env(safe-area-inset-bottom, 0px);
   --st: env(safe-area-inset-top, 0px);
 }
@@ -64,8 +64,8 @@ body {
 .screen {
   display: none; flex-direction: column;
   flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding-top: calc(var(--st) + 16px);
-  padding-bottom: calc(62px + var(--sb) + 12px);
+  padding-top: calc(env(safe-area-inset-top) + 16px);
+  padding-bottom: calc(62px + env(safe-area-inset-bottom) + 12px);
   -webkit-overflow-scrolling: touch;
 }
 .screen.active { display: flex; }
@@ -75,7 +75,7 @@ body {
   position: fixed; bottom: 0; left: 50%;
   transform: translateX(-50%);
   width: 100%; max-width: 480px;
-  height: calc(58px + var(--sb));
+  height: calc(58px + env(safe-area-inset-bottom));
   background: rgba(245,242,236,0.94);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
@@ -330,7 +330,7 @@ body {
   background:var(--bg);
   border-radius:22px 22px 0 0;
   border:1px solid var(--bd2); border-bottom:none;
-  padding:0 20px calc(20px + var(--sb));
+  padding:0 20px calc(20px + env(safe-area-inset-bottom));
   animation:sheetUp 0.26s cubic-bezier(0.22,1,0.36,1);
 }
 @keyframes sheetUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
@@ -516,3 +516,32 @@ textarea.fi { resize:none; line-height:1.5; }
 .screen::-webkit-scrollbar-thumb { background:var(--s3); border-radius:2px; }
 
 @keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── SAFE AREA & STICKY HEADER ── */
+/* Covers the status bar so content never bleeds through it while scrolling */
+.safe-top {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: env(safe-area-inset-top, 0px);
+  min-height: 0;
+  width: 100%;
+  flex-shrink: 0;
+  background: var(--bg);
+}
+
+/* Stick the app header below the status bar so it never scrolls away */
+.app-hdr {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 50;
+  background: rgba(245,242,236,0.94);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid var(--bd);
+}
+
+/* Screen has no top padding — safe-top + sticky app-hdr handle it */
+.screen {
+  padding-top: 0 !important;
+}
