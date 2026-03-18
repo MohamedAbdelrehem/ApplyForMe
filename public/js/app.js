@@ -533,7 +533,9 @@ function initSwipe(el, id) {
   content.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX; startY = e.touches[0].clientY;
     tracking = true; curDx = 0;
-    content.style.transition = '';
+    // Remove transition only — let current transform stay so drag feels immediate
+    content.style.transition = 'none';
+    bg.style.transition = 'none';
   }, { passive: true });
 
   content.addEventListener('touchmove', e => {
@@ -541,36 +543,60 @@ function initSwipe(el, id) {
     curDx = startX - e.touches[0].clientX;
     const dy = Math.abs(startY - e.touches[0].clientY);
     if (dy > Math.abs(curDx) + 8) { tracking = false; return; }
-    if (curDx > 0) {
-      const clamped = Math.min(curDx, SNAP + 16);
-      content.style.transform = `translateX(-${clamped}px)`;
-      bg.style.opacity = String(Math.min(curDx / SNAP, 1));
+
+    if (swiped) {
+      // Already open — only allow swiping right (back)
+      const shift = Math.max(0, SNAP + curDx); // curDx is negative when swiping right
+      content.style.transform = `translateX(-${shift}px)`;
+      bg.style.opacity = String(Math.min(shift / SNAP, 1));
     } else {
-      content.style.transform = ''; bg.style.opacity = '0';
+      // Closed — only allow swiping left (open)
+      if (curDx > 0) {
+        const clamped = Math.min(curDx, SNAP + 16);
+        content.style.transform = `translateX(-${clamped}px)`;
+        bg.style.opacity = String(Math.min(curDx / SNAP, 1));
+      }
     }
   }, { passive: true });
 
   content.addEventListener('touchend', () => {
+    if (!tracking) return;
     tracking = false;
-    if (curDx > SNAP * 0.5) { snapOpen(content, bg, SNAP); swiped = true; }
-    else { snapClose(content, bg); swiped = false; }
+    // Re-enable transition for the snap
+    content.style.transition = '';
+    bg.style.transition = '';
+
+    if (swiped) {
+      // Was open — close if swiped back enough
+      if (-curDx > SNAP * 0.3) { snapClose(content, bg); swiped = false; }
+      else { snapOpen(content, bg, SNAP); }
+    } else {
+      // Was closed — open if swiped far enough
+      if (curDx > SNAP * 0.4) { snapOpen(content, bg, SNAP); swiped = true; }
+      else { snapClose(content, bg); }
+    }
   });
 
-  // Tap on content while open → close
   content.addEventListener('click', e => {
     if (swiped) { e.stopPropagation(); snapClose(content, bg); swiped = false; }
   });
 }
 
 function snapOpen(content, bg, width) {
-  content.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
-  content.style.transform = `translateX(-${width || 160}px)`; bg.style.opacity = '1';
-  setTimeout(() => content.style.transition = '', 220);
+  const t = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+  content.style.transition = t;
+  bg.style.transition = 'opacity 0.22s cubic-bezier(0.22,1,0.36,1)';
+  content.style.transform = `translateX(-${width || 160}px)`;
+  bg.style.opacity = '1';
+  setTimeout(() => { content.style.transition = ''; bg.style.transition = ''; }, 240);
 }
 function snapClose(content, bg) {
-  content.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
-  content.style.transform = ''; bg.style.opacity = '0';
-  setTimeout(() => content.style.transition = '', 220);
+  const t = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+  content.style.transition = t;
+  bg.style.transition = 'opacity 0.22s cubic-bezier(0.22,1,0.36,1)';
+  content.style.transform = '';
+  bg.style.opacity = '0';
+  setTimeout(() => { content.style.transition = ''; bg.style.transition = ''; }, 240);
 }
 function closeAllSwipes() {
   document.querySelectorAll('.dcard').forEach(card => {

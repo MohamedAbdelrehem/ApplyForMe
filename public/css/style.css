@@ -338,6 +338,7 @@ body {
   position:absolute; right:0; top:0; bottom:0; width:160px;
   display:flex; flex-direction:row;
   opacity:0; pointer-events:none;
+  transition: opacity 0.22s cubic-bezier(0.22,1,0.36,1);
 }
 .dcard-swipe-bg[style*="opacity: 1"],
 .dcard-swipe-bg[style*="opacity:1"] { pointer-events:auto; }
