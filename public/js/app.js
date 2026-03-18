@@ -95,6 +95,10 @@ function renderCards() {
     } else {
       const badge = el.querySelector('.badge');
       if(badge){ badge.className='badge '+badgeCls(d.status); badge.textContent=badgeLbl(d); }
+      const subjectEl = el.querySelector('[data-field="subject"]');
+      if(subjectEl) subjectEl.textContent = d.subject || '';
+      const bodyEl = el.querySelector('[data-field="body"]');
+      if(bodyEl){ bodyEl.textContent = d.body || ''; bodyEl.classList.remove('exp'); }
     }
   });
   refreshStats();
@@ -130,9 +134,9 @@ function buildCard(d) {
 <div class="dcard-meta">
   <div class="meta-row"><span class="meta-k">To</span><span class="meta-v em">${esc(d.toEmail||'—')}</span></div>
   ${d.recruiterName?`<div class="meta-row"><span class="meta-k">Recruiter</span><span class="meta-v">${esc(d.recruiterName)}</span></div>`:''}
-  <div class="meta-row"><span class="meta-k">Subject</span><span class="meta-v">${esc(d.subject)}</span></div>
+  <div class="meta-row"><span class="meta-k">Subject</span><span class="meta-v" data-field="subject">${esc(d.subject)}</span></div>
 </div>
-<div class="body-prev" onclick="this.classList.toggle('exp')">${esc(d.body)}</div>
+<div class="body-prev" data-field="body" onclick="this.classList.toggle('exp')">${esc(d.body)}</div>
 ${srcRow}
 <div class="dcard-acts">
   <button class="act regen" onclick="regenDraft('${d.id}')">
@@ -184,30 +188,157 @@ function deleteLink(id) {
   if(el){ el.style.cssText='transition:opacity .2s;opacity:0'; setTimeout(()=>{ State.removeLink(id); renderLinks(); },210); }
 }
 
+// ── PASTE CONTENT MODAL (fallback when Jina can't fetch) ───────────
+let _pendingUrl = null;
+
+function openPasteModal(url, hint) {
+  _pendingUrl = url;
+  document.getElementById('paste-modal').classList.add('open');
+  document.getElementById('paste-textarea').value = '';
+  const sub = document.getElementById('paste-modal-sub');
+  if (sub) sub.textContent = hint || 'Copy all the text from the job post and paste it below.';
+  const display = document.getElementById('paste-url-display');
+  if (display) display.textContent = url.length > 52 ? url.slice(0, 52) + '…' : url;
+  setTimeout(() => document.getElementById('paste-textarea').focus(), 100);
+}
+
+function closePasteModal() {
+  document.getElementById('paste-modal').classList.remove('open');
+  _pendingUrl = null;
+}
+
+async function confirmPaste() {
+  const content = document.getElementById('paste-textarea').value.trim();
+  if (!content) { toast('Please paste the job post content first'); return; }
+  closePasteModal();
+  await runGenerate(content, _pendingUrl || '');
+}
+
+// ── JINA FETCH ─────────────────────────────────────────────────────
+async function jinaFetch(url) {
+  const jinaUrl = 'https://r.jina.ai/' + url;
+  const res = await fetch(jinaUrl, {
+    headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
+    signal: AbortSignal.timeout(12000)
+  });
+  if (!res.ok) return null;
+  const raw = await res.text();
+  const lower = raw.toLowerCase();
+  const isLoginWall = (
+    (lower.includes('sign in') || lower.includes('log in') || lower.includes('join linkedin')) &&
+    raw.length < 3000
+  );
+  if (isLoginWall) return null;
+  return cleanJinaText(raw);
+}
+
+// Strip Jina response down to just the post body
+function cleanJinaText(raw) {
+  let text = raw;
+
+  // 1. Strip Jina metadata header lines
+  text = text.replace(/^(Title|URL Source|Published Time|Markdown Content):.*\n/gm, '').trim();
+
+  // 2. Rescue mailto emails BEFORE stripping links
+  text = text.replace(
+    /\[([^\]]+)\]\(https?:\/\/[^)]*url=mailto[^)]*\)/gi,
+    (_, label) => label
+  );
+
+  // 3. Find post body start: after '[Report this post](...)'
+  const reportMatch = text.match(/\*\s*\[Report this post\]\([^)]*\)\n/);
+  if (reportMatch) {
+    text = text.slice(reportMatch.index + reportMatch[0].length).trim();
+  }
+
+  // 4. Cut at first post-body noise
+  const cutMarkers = [
+    /\[!\[Image \d+/,
+    /\[\d+\s+Comments?\]/i,
+    /\[Like\]\(https?:/i,
+    /^\s*Share\s*$/m,
+    /See more comments/i,
+    /To view or add a comment/i,
+    /Explore content categories/i,
+    /LinkedIn©\s*20\d\d/i,
+  ];
+  let cutAt = text.length;
+  for (const marker of cutMarkers) {
+    const m = marker.exec(text);
+    if (m && m.index < cutAt) cutAt = m.index;
+  }
+  text = text.slice(0, cutAt).trim();
+
+  // 5. Strip remaining markdown links [label](url) → label
+  text = text.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+
+  // 6. Strip bare image tags and collapse blank lines
+  text = text
+    .replace(/!\[Image \d+[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return text.length > 80 ? text : null;
+}
+
 // ── FETCH + GENERATE ───────────────────────────────────────────────
 async function fetchPost() {
   const input = document.getElementById('url-input');
   const val   = input.value.trim();
-  if(!val){ toast('Paste a LinkedIn URL or job description first'); return; }
+  if (!val) { toast('Paste a LinkedIn URL or job description first'); return; }
 
+  const isUrl = val.startsWith('http://') || val.startsWith('https://');
+
+  // Raw text pasted directly — send straight to AI
+  if (!isUrl) {
+    input.value = '';
+    await runGenerate(val, '');
+    return;
+  }
+
+  // It's a URL — try Jina first
   const btn  = document.getElementById('fetch-btn');
   const ind  = document.getElementById('fetch-ind');
   const step = document.getElementById('fetch-step');
-  btn.disabled=true; ind.classList.add('show');
+  btn.disabled = true; ind.classList.add('show');
+  step.textContent = 'Fetching post…';
+
+  let postText = null;
+  try {
+    postText = await jinaFetch(val);
+  } catch (e) {
+    console.warn('Jina fetch failed:', e.message);
+  } finally {
+    btn.disabled = false; ind.classList.remove('show');
+  }
+
+  if (!postText) {
+    openPasteModal(val, 'Auto-fetch was blocked. Open the post, select all text, and paste it below.');
+    return;
+  }
+
+  input.value = '';
+  await runGenerate(postText, val);
+}
+
+async function runGenerate(postText, sourceUrl) {
+  const btn  = document.getElementById('fetch-btn');
+  const ind  = document.getElementById('fetch-ind');
+  const step = document.getElementById('fetch-step');
+  btn.disabled = true; ind.classList.add('show');
 
   try {
     step.textContent = 'Extracting job details…';
-    const jobData = await AI.parseJobPost(val);
+    const jobData = await AI.parseJobPost(postText);
 
-    if(!jobData||jobData.company==='Unknown'){
+    if (!jobData || jobData.company === 'Unknown') {
       toast('Couldn\'t parse — try pasting the full job description text'); return;
     }
 
     step.textContent = 'Writing your email…';
     const email = await AI.generateEmailDraft(jobData, State.profile);
-    if(!email){ toast('Email generation failed — try again'); return; }
+    if (!email) { toast('Email generation failed — try again'); return; }
 
-    // Determine the best email from the post data (not from AI guess)
     const bestEmail = jobData.recruiterEmail || jobData.companyEmail || email.toEmail || '';
 
     const draft = {
@@ -221,35 +352,37 @@ async function fetchPost() {
       body:          email.body,
       skills:        jobData.skills        || [],
       requirements:  jobData.requirements  || '',
-      sourceUrl:     val.startsWith('http') ? val : null,
+      sourceUrl:     sourceUrl             || null,
       poster:        jobData.poster        || null,
       createdAt:     new Date().toISOString()
     };
 
-    // Save to links automatically
     State.addLink({
       id:       uid(),
-      url:      val.startsWith('http') ? val : '',
-      poster:   jobData.poster || null,
+      url:      sourceUrl || '',
+      poster:   jobData.poster   || null,
       company:  jobData.company,
       jobTitle: jobData.jobTitle,
       email:    bestEmail,
       savedAt:  new Date().toISOString()
     });
 
-    State.addDraft(draft); renderCards(); input.value='';
+    State.addDraft(draft); renderCards();
+    document.getElementById('url-input').value = '';
     toast(`Draft ready — ${draft.company}`);
 
-  } catch(err) {
+  } catch (err) {
     console.error(err);
-    toast('Error: '+(err.message||'Something went wrong'));
+    toast('Error: ' + (err.message || 'Something went wrong'));
   } finally {
-    btn.disabled=false; ind.classList.remove('show');
+    btn.disabled = false; ind.classList.remove('show');
   }
 }
 
 async function regenDraft(id) {
   const d = State.drafts.find(x=>x.id===id); if(!d) return;
+  const btn = document.querySelector(`.dcard[data-id="${id}"] .act.regen`);
+  if(btn){ btn.disabled=true; btn.style.opacity='0.5'; }
   toast('Regenerating…');
   try {
     const email = await AI.generateEmailDraft(
@@ -261,6 +394,7 @@ async function regenDraft(id) {
       renderCards(); toast('Email regenerated!');
     }
   } catch { toast('Regen failed — try again'); }
+  finally { if(btn){ btn.disabled=false; btn.style.opacity=''; } }
 }
 
 function copyDraft(id) {
@@ -407,15 +541,11 @@ const OB_TOTAL = 4;
 function showSplash() {
   const splash = document.getElementById('splash');
   if (!splash) return;
-
-  // If already onboarded: splash shows alone for 1.6s then fades out
-  // If first time: onboarding is made visible at 1.4s (under the splash),
-  // then splash fades at 1.6s — revealing onboarding already in place, no gap
   const alreadyOnboarded = !!localStorage.getItem('fursa_onboarded');
   const fadeAt = 1600;
 
   if (!alreadyOnboarded) {
-    // Make onboarding visible (but still under splash z-index) before splash fades
+    // Show onboarding under splash just before it fades — no visible gap
     setTimeout(() => {
       const ob = document.getElementById('onboarding');
       if (ob) ob.style.display = 'flex';
@@ -424,8 +554,7 @@ function showSplash() {
 
   setTimeout(() => {
     splash.classList.add('hide');
-    // Fully remove splash from layout after transition so nothing blocks taps
-    setTimeout(() => splash.classList.add('gone'), 520);
+    setTimeout(() => { splash.classList.add('gone'); }, 520);
   }, fadeAt);
 }
 
@@ -434,32 +563,26 @@ function showOnboardingIfNeeded() {
     const ob = document.getElementById('onboarding');
     if (ob) { ob.style.display = 'none'; ob.classList.add('gone'); }
   }
-  // Actual show is handled inside showSplash timing above
+  // Actual timing handled inside showSplash
 }
 
 function goSlide(index) {
   const slides = document.querySelectorAll('.ob-slide');
   const dots   = document.querySelectorAll('.ob-dot');
   const cta    = document.getElementById('ob-cta');
-
   slides[_obIndex]?.classList.remove('active');
   slides[_obIndex]?.classList.add('exit');
-  setTimeout(() => slides[_obIndex < index ? _obIndex : _obIndex]?.classList.remove('exit'), 350);
-
+  const prev = _obIndex;
   _obIndex = index;
+  setTimeout(() => slides[prev]?.classList.remove('exit'), 350);
   slides[_obIndex]?.classList.add('active');
   dots.forEach((d,i) => d.classList.toggle('active', i === _obIndex));
   cta.textContent = _obIndex === OB_TOTAL - 1 ? 'Get Started' : 'Next';
 }
 
 function obNext() {
-  if (_obIndex < OB_TOTAL - 1) {
-    const prev = _obIndex;
-    goSlide(_obIndex + 1);
-    document.querySelectorAll('.ob-slide')[prev]?.classList.remove('exit');
-  } else {
-    finishOnboarding();
-  }
+  if (_obIndex < OB_TOTAL - 1) goSlide(_obIndex + 1);
+  else finishOnboarding();
 }
 
 function finishOnboarding() {
@@ -470,7 +593,7 @@ function finishOnboarding() {
   setTimeout(() => { ob.classList.add('gone'); ob.style.display = 'none'; }, 420);
 }
 
-
+// ── INSTALL ───────────────────────────────────────────────────────
 let deferredInstall=null;
 const isIos=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone=()=>window.navigator.standalone===true||window.matchMedia('(display-mode:standalone)').matches;
@@ -496,6 +619,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   document.getElementById('url-input').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();fetchPost();} });
   document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('overlay')) closeSched(); });
+  document.getElementById('paste-modal')?.addEventListener('click',e=>{ if(e.target===document.getElementById('paste-modal')) closePasteModal(); });
   document.getElementById('cv-file').addEventListener('change',e=>handleCv(e.target.files[0]));
   document.getElementById('cv-upload-box').addEventListener('click',()=>document.getElementById('cv-file').click());
   const cvBox=document.getElementById('cv-upload-box');
