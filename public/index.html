@@ -187,6 +187,22 @@
     <div style="height:16px"></div>
   </div>
 
+  <!-- ════════════════════════════ PASTE CONTENT MODAL ═══ -->
+  <div id="paste-modal">
+    <div class="paste-sheet">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Paste job post</div>
+      <div class="sh-sub" id="paste-modal-sub">Copy all the text from the job post and paste it below.</div>
+      <div class="paste-url-tag">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span id="paste-url-display"></span>
+      </div>
+      <textarea id="paste-textarea" placeholder="Paste the full job description here — title, company, requirements, recruiter email, everything…"></textarea>
+      <button class="sh-cta" onclick="confirmPaste()">Generate email →</button>
+      <button class="sh-cancel" onclick="closePasteModal()">Cancel</button>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════ SCHEDULE SHEET ═══ -->
   <div id="overlay">
     <div class="sheet">

@@ -180,30 +180,162 @@ function deleteLink(id) {
   if(el){ el.style.cssText='transition:opacity .2s;opacity:0'; setTimeout(()=>{ State.removeLink(id); renderLinks(); },210); }
 }
 
+// ── PASTE CONTENT MODAL (fallback when Jina can't fetch) ───────────
+let _pendingUrl = null;
+
+function openPasteModal(url, hint) {
+  _pendingUrl = url;
+  document.getElementById('paste-modal').classList.add('open');
+  document.getElementById('paste-textarea').value = '';
+  const sub = document.getElementById('paste-modal-sub');
+  if (sub) sub.textContent = hint || 'Copy all the text from the job post and paste it below.';
+  const display = document.getElementById('paste-url-display');
+  if (display) display.textContent = url.length > 52 ? url.slice(0, 52) + '…' : url;
+  setTimeout(() => document.getElementById('paste-textarea').focus(), 100);
+}
+
+function closePasteModal() {
+  document.getElementById('paste-modal').classList.remove('open');
+  _pendingUrl = null;
+}
+
+async function confirmPaste() {
+  const content = document.getElementById('paste-textarea').value.trim();
+  if (!content) { toast('Please paste the job post content first'); return; }
+  closePasteModal();
+  await runGenerate(content, _pendingUrl || '');
+}
+
+// ── JINA FETCH ─────────────────────────────────────────────────────
+// Returns extracted text, or null if blocked/failed
+async function jinaFetch(url) {
+  const jinaUrl = 'https://r.jina.ai/' + url;
+  const res = await fetch(jinaUrl, {
+    headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
+    signal: AbortSignal.timeout(12000)
+  });
+  if (!res.ok) return null;
+  const raw = await res.text();
+  // Detect login walls — Jina returns the page but it's just a sign-in prompt
+  const lower = raw.toLowerCase();
+  const isLoginWall = (
+    (lower.includes('sign in') || lower.includes('log in') || lower.includes('join linkedin')) &&
+    raw.length < 3000
+  );
+  if (isLoginWall) return null;
+  return cleanJinaText(raw);
+}
+
+// Strip Jina response down to just the post body — kills nav, comments, footer, etc.
+function cleanJinaText(raw) {
+  let text = raw;
+
+  // 1. Strip Jina metadata header lines (Title: / URL Source: / Published Time: / Markdown Content:)
+  text = text.replace(/^(Title|URL Source|Published Time|Markdown Content):.*\n/gm, '').trim();
+
+  // 2. Rescue mailto emails BEFORE stripping links
+  //    LinkedIn wraps them as [email@x.com](https://linkedin.com/redir/redirect?url=mailto%3A...)
+  text = text.replace(
+    /\[([^\]]+)\]\(https?:\/\/[^)]*url=mailto[^)]*\)/gi,
+    (_, label) => label
+  );
+
+  // 3. Find post body start: everything after the '[Report this post](...)' line
+  const reportMatch = text.match(/\*\s*\[Report this post\]\([^)]*\)\n/);
+  if (reportMatch) {
+    text = text.slice(reportMatch.index + reportMatch[0].length).trim();
+  }
+
+  // 4. Cut at the earliest post-body noise marker (reactions, comments, social actions)
+  const cutMarkers = [
+    /\[!\[Image \d+/,
+    /\[\d+\s+Comments?\]/i,
+    /\[Like\]\(https?:/i,
+    /^\s*Share\s*$/m,
+    /See more comments/i,
+    /To view or add a comment/i,
+    /Explore content categories/i,
+    /LinkedIn©\s*20\d\d/i,
+  ];
+  let cutAt = text.length;
+  for (const marker of cutMarkers) {
+    const m = marker.exec(text);
+    if (m && m.index < cutAt) cutAt = m.index;
+  }
+  text = text.slice(0, cutAt).trim();
+
+  // 5. Strip remaining markdown links [label](url) → label
+  text = text.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+
+  // 6. Strip bare image tags and collapse excess blank lines
+  text = text
+    .replace(/!\[Image \d+[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return text.length > 80 ? text : null;
+}
+
 // ── FETCH + GENERATE ───────────────────────────────────────────────
 async function fetchPost() {
   const input = document.getElementById('url-input');
   const val   = input.value.trim();
-  if(!val){ toast('Paste a LinkedIn URL or job description first'); return; }
+  if (!val) { toast('Paste a LinkedIn URL or job description first'); return; }
 
+  const isUrl = val.startsWith('http://') || val.startsWith('https://');
+
+  // Raw text pasted directly — send straight to AI
+  if (!isUrl) {
+    input.value = '';
+    await runGenerate(val, '');
+    return;
+  }
+
+  // It's a URL — try Jina first
   const btn  = document.getElementById('fetch-btn');
   const ind  = document.getElementById('fetch-ind');
   const step = document.getElementById('fetch-step');
-  btn.disabled=true; ind.classList.add('show');
+  btn.disabled = true; ind.classList.add('show');
+  step.textContent = 'Fetching post…';
+
+  let postText = null;
+  try {
+    postText = await jinaFetch(val);
+  } catch (e) {
+    console.warn('Jina fetch failed:', e.message);
+  } finally {
+    btn.disabled = false; ind.classList.remove('show');
+  }
+
+  if (!postText) {
+    // Jina blocked or failed — open paste modal with clear message
+    openPasteModal(val, 'Auto-fetch was blocked. Open the post, select all text, and paste it below.');
+    return;
+  }
+
+  // Jina succeeded — clear input and run generation
+  input.value = '';
+  await runGenerate(postText, val);
+}
+
+async function runGenerate(postText, sourceUrl) {
+  const btn  = document.getElementById('fetch-btn');
+  const ind  = document.getElementById('fetch-ind');
+  const step = document.getElementById('fetch-step');
+  btn.disabled = true; ind.classList.add('show');
 
   try {
     step.textContent = 'Extracting job details…';
-    const jobData = await AI.parseJobPost(val);
+    const jobData = await AI.parseJobPost(postText);
 
-    if(!jobData||jobData.company==='Unknown'){
+    if (!jobData || jobData.company === 'Unknown') {
       toast('Couldn\'t parse — try pasting the full job description text'); return;
     }
 
     step.textContent = 'Writing your email…';
     const email = await AI.generateEmailDraft(jobData, State.profile);
-    if(!email){ toast('Email generation failed — try again'); return; }
+    if (!email) { toast('Email generation failed — try again'); return; }
 
-    // Determine the best email from the post data (not from AI guess)
     const bestEmail = jobData.recruiterEmail || jobData.companyEmail || email.toEmail || '';
 
     const draft = {
@@ -217,30 +349,30 @@ async function fetchPost() {
       body:          email.body,
       skills:        jobData.skills        || [],
       requirements:  jobData.requirements  || '',
-      sourceUrl:     val.startsWith('http') ? val : null,
+      sourceUrl:     sourceUrl             || null,
       poster:        jobData.poster        || null,
       createdAt:     new Date().toISOString()
     };
 
-    // Save to links automatically
     State.addLink({
       id:       uid(),
-      url:      val.startsWith('http') ? val : '',
-      poster:   jobData.poster || null,
+      url:      sourceUrl || '',
+      poster:   jobData.poster   || null,
       company:  jobData.company,
       jobTitle: jobData.jobTitle,
       email:    bestEmail,
       savedAt:  new Date().toISOString()
     });
 
-    State.addDraft(draft); renderCards(); input.value='';
+    State.addDraft(draft); renderCards();
+    document.getElementById('url-input').value = '';
     toast(`Draft ready — ${draft.company}`);
 
-  } catch(err) {
+  } catch (err) {
     console.error(err);
-    toast('Error: '+(err.message||'Something went wrong'));
+    toast('Error: ' + (err.message || 'Something went wrong'));
   } finally {
-    btn.disabled=false; ind.classList.remove('show');
+    btn.disabled = false; ind.classList.remove('show');
   }
 }
 
@@ -419,6 +551,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   document.getElementById('url-input').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();fetchPost();} });
   document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('overlay')) closeSched(); });
+  document.getElementById('paste-modal')?.addEventListener('click',e=>{ if(e.target===document.getElementById('paste-modal')) closePasteModal(); });
   document.getElementById('cv-file').addEventListener('change',e=>handleCv(e.target.files[0]));
   document.getElementById('cv-upload-box').addEventListener('click',()=>document.getElementById('cv-file').click());
   const cvBox=document.getElementById('cv-upload-box');
