@@ -1,3 +1,7 @@
+// TODO: Add paste url button
+// TODO: if company name not avialble check if the one posting is from this company
+// TODO: summary CV automatic and companies experiance so used in Email
+
 'use strict';
 
 // ── STATE ──────────────────────────────────────────────────────────
