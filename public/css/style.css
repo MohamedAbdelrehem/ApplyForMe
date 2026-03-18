@@ -262,7 +262,7 @@ body {
 .body-prev.exp { max-height:none; -webkit-mask-image:none; mask-image:none; }
 
 /* Actions */
-.dcard-acts { display:flex; gap:6px; padding:0 14px 13px; }
+.dcard-acts { display:flex; gap:6px; padding:10px 14px 13px; }
 .act {
   display:flex; align-items:center; justify-content:center; gap:5px;
   border:1px solid var(--bd2); border-radius:var(--r-md);
