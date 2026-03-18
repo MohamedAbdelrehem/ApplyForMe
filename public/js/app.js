@@ -347,20 +347,41 @@ function cleanJinaText(raw) {
 
 // ── CLIPBOARD PASTE ────────────────────────────────────────────────
 async function pasteFromClipboard() {
-  try {
-    const text = await navigator.clipboard.readText();
-    if (!text.trim()) { toast('Clipboard is empty'); return; }
-    const input = document.getElementById('url-input');
-    input.value = text.trim();
-    input.focus();
-    // Auto-fetch if it looks like a URL
-    if (text.trim().startsWith('http')) fetchPost();
+  const urlInput = document.getElementById('url-input');
+
+  // First try the modern Clipboard API (works on Android + desktop)
+  if (navigator.clipboard?.readText) {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text?.trim()) {
+        urlInput.value = text.trim();
+        urlInput.focus();
+        if (text.trim().startsWith('http')) fetchPost();
+        else toast('Pasted — tap Fetch when ready');
+        return;
+      }
+    } catch (_) { /* blocked on iOS — fall through to execCommand */ }
+  }
+
+  // iOS fallback: temp input + execCommand('paste')
+  // Must happen synchronously inside the tap handler to keep the user gesture
+  const tmp = document.createElement('input');
+  tmp.style.cssText = 'position:fixed;opacity:0;top:0;left:0;width:1px;height:1px;font-size:16px';
+  document.body.appendChild(tmp);
+  tmp.focus();
+  const ok = document.execCommand('paste');
+  const pasted = tmp.value;
+  document.body.removeChild(tmp);
+
+  if (ok && pasted?.trim()) {
+    urlInput.value = pasted.trim();
+    urlInput.focus();
+    if (pasted.trim().startsWith('http')) fetchPost();
     else toast('Pasted — tap Fetch when ready');
-  } catch {
-    // Clipboard permission denied — focus input so user can paste manually
-    const input = document.getElementById('url-input');
-    input.focus(); input.select();
-    toast('Tap and hold to paste');
+  } else {
+    // Last resort: just focus the real input so user can long-press paste
+    urlInput.focus();
+    toast('Tap and hold the field to paste');
   }
 }
 
