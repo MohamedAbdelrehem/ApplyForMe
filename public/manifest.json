@@ -1,11 +1,11 @@
 {
-  "name": "ApplyForMe",
-  "short_name": "ApplyForMe",
-  "description": "Paste a LinkedIn job post. Get a ready-to-send email draft instantly.",
+  "name": "Fursa — فرصة",
+  "short_name": "Fursa",
+  "description": "Your next opportunity, one click away. Focus on your life.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0D0F14",
-  "theme_color": "#0D0F14",
+  "background_color": "#F5F2EC",
+  "theme_color": "#F5F2EC",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },

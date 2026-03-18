@@ -1,4 +1,4 @@
-const CACHE = 'afm-v1';
+const CACHE = 'fursa-v1';
 const ASSETS = ['/', '/index.html', '/css/style.css', '/js/ai.js', '/js/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -14,7 +14,6 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Don't cache API calls
   if (e.request.url.includes('/api/')) return;
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))

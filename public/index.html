@@ -6,14 +6,82 @@
   <meta name="theme-color" content="#F5F2EC"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="ApplyForMe"/>
-  <meta name="description" content="Paste a LinkedIn job post, get a ready-to-send email draft instantly."/>
-  <title>ApplyForMe</title>
+  <meta name="apple-mobile-web-app-title" content="Fursa"/>
+  <meta name="description" content="Your next opportunity, one click away. Focus on your life — Fursa handles the apply."/>
+  <title>Fursa — فرصة</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
   <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
+
+<!-- ═══════════════════════════════════ SPLASH SCREEN ═══ -->
+<div id="splash">
+  <div class="splash-inner">
+    <img src="icons/icon-192.png" class="splash-icon" alt="Fursa"/>
+    <div class="splash-wordmark">Fursa<span class="splash-divider"></span><span class="splash-ar">فرصة</span></div>
+    <div class="splash-tag">Your next opportunity, one click away.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ ONBOARDING ═══ -->
+<div id="onboarding">
+  <div class="ob-slides">
+
+    <div class="ob-slide active" id="ob-0">
+      <div class="ob-illo">
+        <img src="icons/icon-192.png" class="ob-logo-img" alt="Fursa"/>
+      </div>
+      <div class="ob-title">Welcome to Fursa</div>
+      <div class="ob-sub">فرصة — Your chance to apply smarter.<br>One click. Done. Back to your life.</div>
+    </div>
+
+    <div class="ob-slide" id="ob-1">
+      <div class="ob-illo">
+        <div class="ob-icon-wrap ob-icon-link">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </div>
+      </div>
+      <div class="ob-title">Paste any job URL</div>
+      <div class="ob-sub">Drop a LinkedIn post link — Fursa fetches the job details automatically. No copying, no pasting.</div>
+    </div>
+
+    <div class="ob-slide" id="ob-2">
+      <div class="ob-illo">
+        <div class="ob-icon-wrap ob-icon-mail">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+      </div>
+      <div class="ob-title">Get a tailored email</div>
+      <div class="ob-sub">Fursa reads your CV and the job post, then writes a sharp application email — ready to send in seconds.</div>
+    </div>
+
+    <div class="ob-slide" id="ob-3">
+      <div class="ob-illo">
+        <div class="ob-icon-wrap ob-icon-life">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+      </div>
+      <div class="ob-title">Focus on your life</div>
+      <div class="ob-sub">Track every application, schedule sends, and never lose a job post again. Applying takes seconds — not hours.</div>
+    </div>
+
+  </div>
+
+  <!-- Dots -->
+  <div class="ob-dots">
+    <div class="ob-dot active" onclick="goSlide(0)"></div>
+    <div class="ob-dot" onclick="goSlide(1)"></div>
+    <div class="ob-dot" onclick="goSlide(2)"></div>
+    <div class="ob-dot" onclick="goSlide(3)"></div>
+  </div>
+
+  <button class="ob-cta" id="ob-cta" onclick="obNext()">Next</button>
+  <div class="ob-skip" id="ob-skip" onclick="finishOnboarding()">Skip</div>
+</div>
+
 <div id="app">
 
   <!-- ═══════════════════════════════════════════ HOME ═══ -->
@@ -21,18 +89,18 @@
     <div class="safe-top"></div>
 
     <div class="app-hdr">
-      <div class="app-logo">Apply<span>ForMe</span></div>
+      <div class="app-logo"><img src="icons/icon-192.png" class="app-logo-icon" alt="Fursa"><span class="logo-en">Fursa</span><span class="logo-divider"></span><span class="logo-ar">فرصة</span></div>
     </div>
 
     <div class="home-hero">
       <div class="home-greeting">Hey, <em id="greeting-name">there</em> 👋</div>
-      <div class="home-sub">Paste a job post — get a tailored email in seconds.</div>
+      <div class="home-sub">Your next opportunity, one click away. Focus on your life.</div>
     </div>
 
     <!-- Android install banner -->
     <div id="install-banner">
       <div class="ib-txt">
-        <div class="ib-ttl">Add to Home Screen</div>
+        <div class="ib-ttl">Add Fursa to Home Screen</div>
         <div class="ib-sub">Install for instant access</div>
       </div>
       <button class="ib-btn" onclick="installApp()">Install</button>
@@ -46,14 +114,14 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C84B2F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v14M8 6l4-4 4 4"/><path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/></svg>
         </div>
         <div style="flex:1">
-          <div class="ios-ttl">Install ApplyForMe</div>
-          <div class="ios-sub">Add to your iPhone home screen</div>
+          <div class="ios-ttl">Install Fursa — فرصة</div>
+          <div class="ios-sub">Your next opportunity, one click away.</div>
         </div>
         <span class="ios-x" onclick="dismissIos()">×</span>
       </div>
       <div class="ios-steps">
         <div class="ios-step"><span class="ios-num">1</span>Tap the <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline;vertical-align:-2px;margin:0 2px"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> <strong>Share</strong> button in Safari</div>
-        <div class="ios-step"><span class="ios-num">2</span>Tap <strong>Add to Home Screen</strong></div>
+        <div class="ios-step"><span class="ios-num">2</span>Tap <strong>Add Fursa to Home Screen</strong></div>
         <div class="ios-step"><span class="ios-num">3</span>Tap <strong>Add</strong> — done!</div>
       </div>
     </div>
@@ -89,7 +157,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A09890" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
       </div>
       <div class="empty-ttl">No drafts yet</div>
-      <div class="empty-sub">Paste a LinkedIn job post above.<br>Gemini will write your email.</div>
+      <div class="empty-sub">Paste a LinkedIn job post above.<br>Fursa will write your email.</div>
     </div>
     <div style="height:16px"></div>
   </div>
@@ -98,7 +166,7 @@
   <div class="screen" id="screen-links">
     <div class="safe-top"></div>
     <div class="app-hdr">
-      <div class="app-logo">Apply<span>ForMe</span></div>
+      <div class="app-logo"><img src="icons/icon-192.png" class="app-logo-icon" alt="Fursa"><span class="logo-en">Fursa</span><span class="logo-divider"></span><span class="logo-ar">فرصة</span></div>
     </div>
     <div class="links-hdr">
       <div class="links-ttl">Saved posts</div>
@@ -118,7 +186,7 @@
   <div class="screen" id="screen-settings">
     <div class="safe-top"></div>
     <div class="app-hdr">
-      <div class="app-logo">Apply<span>ForMe</span></div>
+      <div class="app-logo"><img src="icons/icon-192.png" class="app-logo-icon" alt="Fursa"><span class="logo-en">Fursa</span><span class="logo-divider"></span><span class="logo-ar">فرصة</span></div>
     </div>
 
     <div class="set-hdr">
@@ -185,22 +253,6 @@
 
     <button class="save-btn" onclick="saveProfile()">Save profile</button>
     <div style="height:16px"></div>
-  </div>
-
-  <!-- ════════════════════════════ PASTE CONTENT MODAL ═══ -->
-  <div id="paste-modal">
-    <div class="paste-sheet">
-      <div class="sh-handle"></div>
-      <div class="sh-title">Paste job post</div>
-      <div class="sh-sub" id="paste-modal-sub">Copy all the text from the job post and paste it below.</div>
-      <div class="paste-url-tag">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span id="paste-url-display"></span>
-      </div>
-      <textarea id="paste-textarea" placeholder="Paste the full job description here — title, company, requirements, recruiter email, everything…"></textarea>
-      <button class="sh-cta" onclick="confirmPaste()">Generate email →</button>
-      <button class="sh-cancel" onclick="closePasteModal()">Cancel</button>
-    </div>
   </div>
 
   <!-- ═══════════════════════════════════ SCHEDULE SHEET ═══ -->
