@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
-  const { model = 'gemini-2.5-flash', contents, systemInstruction, generationConfig } = req.body;
+  const { model = 'gemini-3.1-flash-lite-preview', contents, systemInstruction, generationConfig } = req.body;
 
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
@@ -24,11 +24,15 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents,
-        ...(systemInstruction && { systemInstruction: { parts: [{ text: systemInstruction }] } }),
+        // systemInstruction arrives as a plain string from ai.js
+        ...(systemInstruction && {
+          systemInstruction: {
+            parts: [{ text: typeof systemInstruction === 'string' ? systemInstruction : systemInstruction?.parts?.[0]?.text || '' }]
+          }
+        }),
         generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.7,
-          maxOutputTokens: 1024,
+          temperature: 0.4,
+          maxOutputTokens: 8192,
           ...generationConfig
         }
       })

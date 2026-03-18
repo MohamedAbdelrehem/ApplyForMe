@@ -1,36 +1,30 @@
-/* ai.js — Gemini, direct browser call for Live Server / local testing
-   ⚠️  Replace YOUR_KEY_HERE with your key from https://aistudio.google.com/app/apikey */
+/* ai.js — all Gemini calls go through /api/gemini proxy (key is server-side only) */
 'use strict';
 
 const AI = (() => {
 
-  const API_KEY  = 'AIzaSyC4R7rH-PDtZe78ANesPCf2w_tFSdx5sPk'; // ← paste your key here
   const MODEL    = 'gemini-3.1-flash-lite-preview';
-  const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
-  // ── CORE CALL (text-only, works with all models) ───────────────────
+  // ── CORE CALL ─────────────────────────────────────────────────────
   async function callGemini(systemInstruction, userText) {
-    const res = await fetch(ENDPOINT, {
+    const res = await fetch('/api/gemini', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': API_KEY
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemInstruction }] },
+        model: MODEL,
         contents: [{ role: 'user', parts: [{ text: userText }] }],
+        systemInstruction: systemInstruction,
         generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
       })
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error?.message || 'Gemini error ' + res.status);
+      throw new Error(err?.error || 'API error ' + res.status);
     }
 
     const data = await res.json();
-    const raw  = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return safeParseJSON(raw);
+    return safeParseJSON(data.text || '');
   }
 
   // ── JSON PARSER ────────────────────────────────────────────────────
