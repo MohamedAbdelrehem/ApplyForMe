@@ -261,7 +261,61 @@ body {
 .body-prev:not(.exp) { max-height:58px; -webkit-mask-image:linear-gradient(to bottom,#000 50%,transparent); mask-image:linear-gradient(to bottom,#000 50%,transparent); }
 .body-prev.exp { max-height:none; -webkit-mask-image:none; mask-image:none; }
 
-/* Actions */
+.dcard-top-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+
+.dcard-menu-wrap { position:relative; }
+.dcard-dots {
+  width:28px; height:28px; border-radius:6px;
+  border:none; background:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--t3); transition:background 0.15s, color 0.15s;
+  -webkit-appearance:none;
+}
+.dcard-dots:active, .dcard-dots:hover { background:var(--s2); color:var(--t2); }
+
+.dcard-menu {
+  position:absolute; top:calc(100% + 6px); right:0;
+  background:#fff; border:1px solid var(--bd2);
+  border-radius:var(--r-md); min-width:150px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.10);
+  overflow:hidden; z-index:50;
+  opacity:0; pointer-events:none; transform:translateY(-6px) scale(0.97);
+  transform-origin:top right;
+  transition:opacity 0.15s, transform 0.15s;
+}
+.dcard-menu.open { opacity:1; pointer-events:auto; transform:translateY(0) scale(1); }
+
+.dcard-menu-item {
+  display:flex; align-items:center; gap:9px;
+  padding:11px 14px; font-size:13px; font-weight:500;
+  color:var(--red); cursor:pointer; font-family:var(--fd);
+  transition:background 0.12s;
+}
+.dcard-menu-item:active { background:var(--red-bg); }
+
+.dcard-menu-confirm {
+  display:none; flex-direction:column; gap:10px;
+  padding:12px 14px; border-top:1px solid var(--bd);
+  background:var(--red-bg);
+}
+.dcard-menu-confirm.show { display:flex; }
+.dcard-menu-confirm-txt { font-size:12px; font-weight:600; color:var(--red); font-family:var(--fd); }
+.dcard-menu-confirm-btns { display:flex; gap:8px; }
+.dcard-menu-cancel {
+  flex:1; padding:7px; border-radius:var(--r-sm);
+  border:1px solid var(--bd2); background:#fff;
+  font-size:12px; font-weight:600; color:var(--t2);
+  cursor:pointer; font-family:var(--fd); -webkit-appearance:none;
+}
+.dcard-menu-del {
+  flex:1; padding:7px; border-radius:var(--r-sm);
+  border:none; background:var(--red); color:#fff;
+  font-size:12px; font-weight:700; cursor:pointer;
+  font-family:var(--fd); -webkit-appearance:none;
+}
+.dcard-menu-del:active { opacity:0.8; }
+
+/* Actions — no delete button anymore */
 .dcard-acts { display:flex; gap:6px; padding:10px 14px 13px; }
 .act {
   display:flex; align-items:center; justify-content:center; gap:5px;
@@ -276,7 +330,90 @@ body {
 .act.send:active { opacity:0.78; }
 .act.regen { color:var(--pur); border-color:var(--pur-bd); background:var(--pur-bg); }
 .act.copy  { color:var(--grn); border-color:var(--grn-bd); background:var(--grn-bg); }
-.act.del   { color:var(--red); border-color:var(--red-bd); background:var(--red-bg); padding:8px 11px; }
+
+/* Swipe to delete */
+.dcard-swipe-wrap { position:relative; overflow:hidden; border-radius:var(--r-lg); }
+.dcard-swipe-bg {
+  position:absolute; right:0; top:0; bottom:0; width:160px;
+  display:flex; flex-direction:row;
+  opacity:0; pointer-events:none;
+}
+.dcard-swipe-bg[style*="opacity: 1"],
+.dcard-swipe-bg[style*="opacity:1"] { pointer-events:auto; }
+.dcard-swipe-action {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:5px; color:#fff;
+  font-size:11px; font-weight:700; font-family:var(--fd); cursor:pointer;
+}
+.dcard-swipe-save { background:var(--grn); }
+.dcard-swipe-del  { background:var(--red); border-radius:0 var(--r-lg) var(--r-lg) 0; }
+.dcard-swipe-content { position:relative; background:#fff; border-radius:var(--r-lg); will-change:transform; }
+
+/* ⋯ dots menu */
+.dcard-dots-wrap { position:relative; }
+.dcard-dots {
+  width:28px; height:28px; border-radius:var(--r-sm);
+  border:none; background:transparent; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--t3); -webkit-appearance:none; transition:background 0.15s;
+}
+.dcard-dots:active { background:var(--s2); }
+.dcard-menu {
+  display:none; position:absolute; right:0; top:32px; z-index:100;
+  background:#fff; border:1px solid var(--bd2); border-radius:var(--r-md);
+  box-shadow:0 4px 16px rgba(0,0,0,0.10); min-width:140px; overflow:hidden;
+}
+.dcard-menu.open { display:block; animation:cardIn 0.15s ease; }
+.dcard-menu-item {
+  display:flex; align-items:center; gap:9px;
+  padding:11px 14px; font-size:13px; font-weight:500;
+  cursor:pointer; transition:background 0.1s;
+}
+.dcard-menu-item:active { background:var(--s1); }
+.dcard-menu-del-item { color:var(--red); }
+.dcard-menu-del-item svg { stroke:var(--red); }
+.dcard-menu-save-item { color:var(--grn); border-bottom:1px solid var(--bd); }
+.dcard-menu-save-item svg { stroke:var(--grn); }
+
+/* Apply button in saved links */
+.lc-apply-btn {
+  display:flex; align-items:center; gap:5px;
+  background:var(--acc); color:#fff; border:none;
+  border-radius:var(--r-sm); padding:6px 12px;
+  font-size:11px; font-weight:700; font-family:var(--fd);
+  cursor:pointer; white-space:nowrap; -webkit-appearance:none;
+  transition:opacity 0.15s;
+}
+.lc-apply-btn:active { opacity:0.75; }
+
+/* Clipboard paste button */
+.paste-btn {
+  width:30px; height:30px; border-radius:var(--r-sm);
+  border:1px solid var(--bd2); background:var(--s1);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--t3); cursor:pointer; flex-shrink:0;
+  -webkit-appearance:none; transition:all 0.15s;
+}
+.paste-btn:active { background:var(--s2); color:var(--t2); transform:scale(0.93); }
+
+/* Delete confirmation bar */
+.dcard-del-confirm {
+  display:none; align-items:center; justify-content:space-between;
+  background:var(--red-bg); border-top:1px solid var(--red-bd);
+  padding:10px 14px; font-size:13px; color:var(--red); font-weight:500;
+  border-radius:0 0 var(--r-lg) var(--r-lg);
+}
+.dcard-del-confirm.show { display:flex; }
+.delconfirm-cancel {
+  border:1px solid var(--bd2); background:var(--s1); color:var(--t2);
+  border-radius:var(--r-sm); padding:6px 12px; font-size:12px;
+  font-weight:600; font-family:var(--fd); cursor:pointer; -webkit-appearance:none;
+}
+.delconfirm-ok {
+  border:none; background:var(--red); color:#fff;
+  border-radius:var(--r-sm); padding:6px 14px; font-size:12px;
+  font-weight:700; font-family:var(--fd); cursor:pointer; -webkit-appearance:none;
+}
 
 /* Source link row */
 .src-row {

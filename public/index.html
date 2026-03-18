@@ -130,6 +130,9 @@
     <div class="url-bar">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A09890" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
       <input id="url-input" type="url" inputmode="url" placeholder="Paste LinkedIn URL or job description…" autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <button class="paste-btn" id="paste-btn" onclick="pasteFromClipboard()" title="Paste from clipboard">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+      </button>
       <button class="fetch-btn" id="fetch-btn" onclick="fetchPost()">Fetch →</button>
     </div>
 

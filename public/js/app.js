@@ -1,7 +1,3 @@
-// TODO: Add paste url button
-// TODO: if company name not avialble check if the one posting is from this company
-// TODO: summary CV automatic and companies experiance so used in Email
-
 'use strict';
 
 // ── STATE ──────────────────────────────────────────────────────────
@@ -111,7 +107,7 @@ function buildCard(d) {
   const [bg,fg] = logoCols(d.company);
   const el = document.createElement('div');
   el.className='dcard'; el.dataset.id=d.id;
-  // Source row only if we have a URL
+
   const srcRow = d.sourceUrl ? `
     <div class="src-row">
       <span class="src-label">Source</span>
@@ -120,41 +116,78 @@ function buildCard(d) {
     </div>` : '';
 
   el.innerHTML = `
-<div class="dcard-top">
-  <div class="dcard-co">
-    <div class="co-logo" style="background:${bg};color:${fg}">${esc(ini(d.company))}</div>
-    <div>
-      <div class="co-name">${esc(d.company)}</div>
-      <div class="co-role">${esc(d.jobTitle)}</div>
+<div class="dcard-swipe-wrap">
+  <div class="dcard-swipe-bg">
+    <div class="dcard-swipe-action dcard-swipe-save" onclick="saveDraftPost('${d.id}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <span>Save</span>
+    </div>
+    <div class="dcard-swipe-action dcard-swipe-del" onclick="confirmDeleteFromMenu('${d.id}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      <span>Delete</span>
     </div>
   </div>
-  <span class="badge ${badgeCls(d.status)}">${badgeLbl(d)}</span>
+  <div class="dcard-swipe-content">
+    <div class="dcard-top">
+      <div class="dcard-co">
+        <div class="co-logo" style="background:${bg};color:${fg}">${esc(ini(d.company))}</div>
+        <div>
+          <div class="co-name">${esc(d.company)}</div>
+          <div class="co-role">${esc(d.jobTitle)}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
+        <span class="badge ${badgeCls(d.status)}">${badgeLbl(d)}</span>
+        <div class="dcard-dots-wrap">
+          <button class="dcard-dots" onclick="toggleCardMenu('${d.id}',event)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          </button>
+          <div class="dcard-menu" id="menu-${d.id}">
+            <div class="dcard-menu-item dcard-menu-save-item" onclick="saveDraftPost('${d.id}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              Save post
+            </div>
+            <div class="dcard-menu-item dcard-menu-del-item" onclick="confirmDeleteFromMenu('${d.id}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              Delete draft
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dcard-div"></div>
+    <div class="dcard-meta">
+      <div class="meta-row"><span class="meta-k">To</span><span class="meta-v em">${esc(d.toEmail||'—')}</span></div>
+      ${d.recruiterName?`<div class="meta-row"><span class="meta-k">Recruiter</span><span class="meta-v">${esc(d.recruiterName)}</span></div>`:''}
+      <div class="meta-row"><span class="meta-k">Subject</span><span class="meta-v" data-field="subject">${esc(d.subject)}</span></div>
+    </div>
+    <div class="body-prev" data-field="body" onclick="this.classList.toggle('exp')">${esc(d.body)}</div>
+    ${srcRow}
+    <div class="dcard-acts">
+      <button class="act regen" onclick="regenDraft('${d.id}')">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        Regen
+      </button>
+      <button class="act copy" onclick="copyDraft('${d.id}')">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy
+      </button>
+      <button class="act send" onclick="openSched('${d.id}')">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Send
+      </button>
+    </div>
+  </div>
 </div>
-<div class="dcard-div"></div>
-<div class="dcard-meta">
-  <div class="meta-row"><span class="meta-k">To</span><span class="meta-v em">${esc(d.toEmail||'—')}</span></div>
-  ${d.recruiterName?`<div class="meta-row"><span class="meta-k">Recruiter</span><span class="meta-v">${esc(d.recruiterName)}</span></div>`:''}
-  <div class="meta-row"><span class="meta-k">Subject</span><span class="meta-v" data-field="subject">${esc(d.subject)}</span></div>
-</div>
-<div class="body-prev" data-field="body" onclick="this.classList.toggle('exp')">${esc(d.body)}</div>
-${srcRow}
-<div class="dcard-acts">
-  <button class="act regen" onclick="regenDraft('${d.id}')">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-    Regen
-  </button>
-  <button class="act copy" onclick="copyDraft('${d.id}')">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    Copy
-  </button>
-  <button class="act send" onclick="openSched('${d.id}')">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    Send
-  </button>
-  <button class="act del" onclick="deleteDraft('${d.id}')">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-  </button>
+<div class="dcard-del-confirm" id="delconfirm-${d.id}">
+  <span>Delete this draft?</span>
+  <div style="display:flex;gap:8px">
+    <button class="delconfirm-cancel" onclick="cancelDelete('${d.id}')">Cancel</button>
+    <button class="delconfirm-ok" onclick="deleteDraftConfirmed('${d.id}')">Delete</button>
+  </div>
 </div>`;
+
+  initSwipe(el, d.id);
   return el;
 }
 
@@ -176,16 +209,47 @@ function renderLinks() {
   </div>
   <div class="lc-div"></div>
   <div class="lc-bottom">
-    <a class="lc-url" href="${esc(l.url)}" target="_blank">${esc(l.url.length>50?l.url.slice(0,50)+'…':l.url)}</a>
-    ${l.poster?`<span class="lc-poster">${esc(l.poster)}</span>`:''}
-    <span class="lc-del" onclick="deleteLink('${l.id}')">×</span>
+    <a class="lc-url" href="${esc(l.url)}" target="_blank" onclick="event.stopPropagation()">${esc(l.url.length>38?l.url.slice(0,38)+'…':l.url)}</a>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      ${l.url ? `<button class="lc-apply-btn" onclick="applyFromSaved('${esc(l.url)}')">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Apply
+      </button>` : ''}
+      <span class="lc-del" onclick="deleteLink('${l.id}')">×</span>
+    </div>
   </div>
 </div>`).join('');
+}
+
+function saveDraftPost(id) {
+  closeAllMenus(); closeAllSwipes();
+  const d = State.drafts.find(x => x.id === id); if (!d) return;
+  if (!d.sourceUrl) { toast('No URL to save — post was pasted as text'); return; }
+  if (State.links.find(x => x.url === d.sourceUrl)) { toast('Already saved!'); return; }
+  State.addLink({
+    id:       uid(),
+    url:      d.sourceUrl,
+    poster:   d.poster    || null,
+    company:  d.company,
+    jobTitle: d.jobTitle,
+    email:    d.toEmail   || '',
+    savedAt:  new Date().toISOString()
+  });
+  toast('Post saved to Saved tab!');
 }
 
 function deleteLink(id) {
   const el = document.getElementById('lc-'+id);
   if(el){ el.style.cssText='transition:opacity .2s;opacity:0'; setTimeout(()=>{ State.removeLink(id); renderLinks(); },210); }
+}
+
+function applyFromSaved(url) {
+  switchTab('home');
+  const input = document.getElementById('url-input');
+  input.value = url;
+  input.focus();
+  // Small delay so tab switch completes before fetch starts
+  setTimeout(() => fetchPost(), 80);
 }
 
 // ── PASTE CONTENT MODAL (fallback when Jina can't fetch) ───────────
@@ -281,6 +345,25 @@ function cleanJinaText(raw) {
   return text.length > 80 ? text : null;
 }
 
+// ── CLIPBOARD PASTE ────────────────────────────────────────────────
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text.trim()) { toast('Clipboard is empty'); return; }
+    const input = document.getElementById('url-input');
+    input.value = text.trim();
+    input.focus();
+    // Auto-fetch if it looks like a URL
+    if (text.trim().startsWith('http')) fetchPost();
+    else toast('Pasted — tap Fetch when ready');
+  } catch {
+    // Clipboard permission denied — focus input so user can paste manually
+    const input = document.getElementById('url-input');
+    input.focus(); input.select();
+    toast('Tap and hold to paste');
+  }
+}
+
 // ── FETCH + GENERATE ───────────────────────────────────────────────
 async function fetchPost() {
   const input = document.getElementById('url-input');
@@ -357,16 +440,6 @@ async function runGenerate(postText, sourceUrl) {
       createdAt:     new Date().toISOString()
     };
 
-    State.addLink({
-      id:       uid(),
-      url:      sourceUrl || '',
-      poster:   jobData.poster   || null,
-      company:  jobData.company,
-      jobTitle: jobData.jobTitle,
-      email:    bestEmail,
-      savedAt:  new Date().toISOString()
-    });
-
     State.addDraft(draft); renderCards();
     document.getElementById('url-input').value = '';
     toast(`Draft ready — ${draft.company}`);
@@ -409,10 +482,105 @@ function copyDraft(id) {
   }
 }
 
-function deleteDraft(id) {
-  const el = document.querySelector(`.dcard[data-id="${id}"]`);
-  if(el){ el.style.cssText='transition:opacity .2s,transform .2s;opacity:0;transform:translateX(18px)'; setTimeout(()=>{ State.removeDraft(id); renderCards(); },210); }
+function toggleCardMenu(id, e) {
+  e.stopPropagation();
+  const menu = document.getElementById('menu-'+id);
+  const isOpen = menu.classList.contains('open');
+  // Close all other open menus
+  document.querySelectorAll('.dcard-menu.open').forEach(m => m.classList.remove('open'));
+  if (!isOpen) menu.classList.add('open');
 }
+
+function showDelConfirm(id) {
+  document.getElementById('confirm-'+id)?.classList.add('show');
+}
+
+function hideDelConfirm(id) {
+  document.getElementById('confirm-'+id)?.classList.remove('show');
+  document.getElementById('menu-'+id)?.classList.remove('open');
+}
+
+function initSwipe(el, id) {
+  const content = el.querySelector('.dcard-swipe-content');
+  const bg      = el.querySelector('.dcard-swipe-bg');
+  if (!content || !bg) return;
+  const SNAP = 160;
+  let startX = 0, startY = 0, curDx = 0, swiped = false, tracking = false;
+
+  content.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    tracking = true; curDx = 0;
+    content.style.transition = '';
+  }, { passive: true });
+
+  content.addEventListener('touchmove', e => {
+    if (!tracking) return;
+    curDx = startX - e.touches[0].clientX;
+    const dy = Math.abs(startY - e.touches[0].clientY);
+    if (dy > Math.abs(curDx) + 8) { tracking = false; return; }
+    if (curDx > 0) {
+      const clamped = Math.min(curDx, SNAP + 16);
+      content.style.transform = `translateX(-${clamped}px)`;
+      bg.style.opacity = String(Math.min(curDx / SNAP, 1));
+    } else {
+      content.style.transform = ''; bg.style.opacity = '0';
+    }
+  }, { passive: true });
+
+  content.addEventListener('touchend', () => {
+    tracking = false;
+    if (curDx > SNAP * 0.5) { snapOpen(content, bg, SNAP); swiped = true; }
+    else { snapClose(content, bg); swiped = false; }
+  });
+
+  // Tap on content while open → close
+  content.addEventListener('click', e => {
+    if (swiped) { e.stopPropagation(); snapClose(content, bg); swiped = false; }
+  });
+}
+
+function snapOpen(content, bg, width) {
+  content.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+  content.style.transform = `translateX(-${width || 160}px)`; bg.style.opacity = '1';
+  setTimeout(() => content.style.transition = '', 220);
+}
+function snapClose(content, bg) {
+  content.style.transition = 'transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+  content.style.transform = ''; bg.style.opacity = '0';
+  setTimeout(() => content.style.transition = '', 220);
+}
+function closeAllSwipes() {
+  document.querySelectorAll('.dcard').forEach(card => {
+    const c = card.querySelector('.dcard-swipe-content');
+    const b = card.querySelector('.dcard-swipe-bg');
+    if (c) snapClose(c, b);
+  });
+}
+function toggleCardMenu(id, e) {
+  e.stopPropagation();
+  closeAllMenus(id); closeAllSwipes();
+  document.getElementById('menu-' + id)?.classList.toggle('open');
+}
+function closeAllMenus(exceptId) {
+  document.querySelectorAll('.dcard-menu.open').forEach(m => {
+    if (!exceptId || m.id !== 'menu-' + exceptId) m.classList.remove('open');
+  });
+}
+function confirmDeleteFromMenu(id) {
+  closeAllMenus(); closeAllSwipes();
+  document.getElementById('delconfirm-' + id)?.classList.add('show');
+}
+function cancelDelete(id) {
+  document.getElementById('delconfirm-' + id)?.classList.remove('show');
+}
+function deleteDraftConfirmed(id) {
+  const el = document.querySelector(`.dcard[data-id="${id}"]`);
+  if (el) {
+    el.style.cssText = 'transition:opacity .2s,transform .2s;opacity:0;transform:translateX(18px)';
+    setTimeout(() => { State.removeDraft(id); renderCards(); }, 210);
+  }
+}
+function deleteDraft(id) { confirmDeleteFromMenu(id); }
 
 // ── SCHEDULE ──────────────────────────────────────────────────────
 function openSched(id){ State.activeCard=id; document.getElementById('overlay').classList.add('open'); }
@@ -617,6 +785,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
   if(isIos()&&!isStandalone()&&!localStorage.getItem('afm_ios_dismissed')) setTimeout(()=>showIosBanner(),1200);
 
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dcard-menu.open').forEach(m => m.classList.remove('open'));
+  });
+  document.addEventListener('click', () => { closeAllMenus(); });
   document.getElementById('url-input').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();fetchPost();} });
   document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('overlay')) closeSched(); });
   document.getElementById('paste-modal')?.addEventListener('click',e=>{ if(e.target===document.getElementById('paste-modal')) closePasteModal(); });
