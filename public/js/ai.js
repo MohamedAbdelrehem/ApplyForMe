@@ -168,51 +168,63 @@ If you see text like send to X@Y.com or email X@Y.com or CV to X@Y.com — that 
 
   // ── EMAIL GENERATION ───────────────────────────────────────────────
   async function generateEmailDraft(jobData, profile) {
-    const system = `You are a professional job application email writer.
-Write a SHORT, punchy, structured application email. No fluff. No filler sentences.
+    const system = `You are an expert job application email writer. Your job is to write a concise, human, and compelling application email that gets responses.
 
-Format the body EXACTLY like this (use actual newlines in the string):
-Line 1: "Dear [recruiter first name or Hiring Team],"
-Line 2: blank
-Line 3: One sentence — who you are, your title, years of experience, and the role you are applying for.
-Line 4: blank
-Line 5: "What I bring:"
-Lines 6-8: Three bullet points starting with "•". Each bullet = ONE concrete skill or achievement that directly matches a job requirement. Use specific tools, numbers, or outcomes from the candidate profile.
-Line 9: blank
-Line 10: One sentence CTA asking for an interview or call, mentioning availability.
-Line 11: blank
-Line 12: "Best regards,"
-Line 13: Candidate full name
+STRICT RULES:
+- Use ONLY facts from the candidate profile provided — never invent skills, titles, companies, or achievements
+- If the profile is sparse, write around what IS there — do not fill gaps with generic claims
+- Match 2-3 specific job requirements to specific things from the candidate's background
+- Tone: confident and direct, like a real person wrote it — not corporate, not a cover letter template
+- Length: 100-140 words in the body. Not a word more.
+- Subject line: specific and attention-grabbing — mention the role and one concrete value prop from the profile. NEVER use "Ready to be Hired" or similar generic phrases.
 
-Rules:
-- 120-150 words MAX
-- Only use skills and facts from the candidate profile — no invention
-- Each bullet must reference something specific from the job requirements
-- Tone: direct, confident, professional — not stiff
+BODY FORMAT (use real newlines):
+"Dear [recruiter first name, or Hiring Team if unknown],"
+[blank line]
+[1 sentence: current title + years of exp + applying for this role at this company]
+[blank line]
+"What I bring:"
+• [bullet: specific skill/achievement from profile that matches a job requirement]
+• [bullet: specific skill/achievement from profile that matches a job requirement]
+• [bullet: specific skill/achievement from profile that matches a job requirement]
+[blank line]
+[1 sentence CTA: request a call or interview, optionally mention availability or location]
+[blank line]
+"Best regards,"
+[Full name]
 
-Return ONLY a raw JSON object. No markdown, no code fences:
+Return ONLY a raw JSON object, no markdown, no code fences:
 {
-  "subject": "Ready to be Hired — [exact job title]",
-  "toEmail": "use recruiterEmail or companyEmail from jobData, else empty string",
-  "body": "full formatted email as a single string"
+  "subject": "string — specific subject line",
+  "toEmail": "recruiterEmail or companyEmail from jobData, else empty string",
+  "body": "full email body as single string with real newlines"
 }`;
+
+    const hasProfile = profile.firstName || profile.currentTitle || profile.skills;
+    const profileBlock = hasProfile ? `
+Candidate profile:
+Name: ${[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Not provided'}
+Current title: ${profile.currentTitle || 'Not provided'}
+Years of experience: ${profile.yearsExp || 'Not specified'}
+Key skills: ${profile.skills || 'Not provided'}
+Location: ${[profile.city, profile.country].filter(Boolean).join(', ') || 'Not provided'}
+Nationality: ${profile.nationality || ''}
+LinkedIn: ${profile.linkedinUrl || ''}
+Professional summary: ${profile.summary || 'Not provided'}
+${profile.coverTemplate ? `Tone/style notes from candidate: ${profile.coverTemplate}` : ''}` : `
+Candidate profile: Not filled in yet. Write a placeholder email using only the job details, and add a [YOUR NAME] placeholder.`;
 
     const prompt = `Job details:
 Company: ${jobData.company}
 Role: ${jobData.jobTitle}
-Requirements: ${jobData.requirements || ''}
-Required skills: ${(jobData.skills||[]).join(', ')}
-Recruiter: ${jobData.recruiterName || 'unknown'}
-Email: ${jobData.recruiterEmail || jobData.companyEmail || ''}
-
-Candidate profile:
-Name: ${profile.firstName || ''} ${profile.lastName || ''}
-Title: ${profile.currentTitle || ''}
-Experience: ${profile.yearsExp || '?'} years
-Skills: ${profile.skills || ''}
-Summary: ${profile.summary || ''}
-Location: ${profile.city || ''}, ${profile.country || ''}
-LinkedIn: ${profile.linkedinUrl || ''}`;
+Location: ${jobData.location || 'Not specified'}
+Job type: ${jobData.jobType || 'Not specified'}
+Recruiter name: ${jobData.recruiterName || 'Unknown'}
+Contact email: ${jobData.recruiterEmail || jobData.companyEmail || 'Not found'}
+Required skills: ${(jobData.skills||[]).join(', ') || 'Not specified'}
+Requirements summary: ${jobData.requirements || 'Not specified'}
+Role summary: ${jobData.summary || ''}
+${profileBlock}`;
 
     return callGemini(system, prompt);
   }

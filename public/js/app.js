@@ -89,8 +89,13 @@ function renderCards() {
       const prev = i>0 ? wrap.querySelector(`.dcard[data-id="${State.drafts[i-1].id}"]`) : null;
       if(i===0) wrap.prepend(el); else if(prev) prev.after(el); else wrap.append(el);
     } else {
+      // Patch the parts that can change after a regen: badge, subject, email body
       const badge = el.querySelector('.badge');
       if(badge){ badge.className='badge '+badgeCls(d.status); badge.textContent=badgeLbl(d); }
+      const subjectEl = el.querySelector('[data-field="subject"]');
+      if(subjectEl) subjectEl.textContent = d.subject || '';
+      const bodyEl = el.querySelector('[data-field="body"]');
+      if(bodyEl){ bodyEl.textContent = d.body || ''; bodyEl.classList.remove('exp'); }
     }
   });
   refreshStats();
@@ -126,9 +131,9 @@ function buildCard(d) {
 <div class="dcard-meta">
   <div class="meta-row"><span class="meta-k">To</span><span class="meta-v em">${esc(d.toEmail||'—')}</span></div>
   ${d.recruiterName?`<div class="meta-row"><span class="meta-k">Recruiter</span><span class="meta-v">${esc(d.recruiterName)}</span></div>`:''}
-  <div class="meta-row"><span class="meta-k">Subject</span><span class="meta-v">${esc(d.subject)}</span></div>
+  <div class="meta-row"><span class="meta-k">Subject</span><span class="meta-v" data-field="subject">${esc(d.subject)}</span></div>
 </div>
-<div class="body-prev" onclick="this.classList.toggle('exp')">${esc(d.body)}</div>
+<div class="body-prev" data-field="body" onclick="this.classList.toggle('exp')">${esc(d.body)}</div>
 ${srcRow}
 <div class="dcard-acts">
   <button class="act regen" onclick="regenDraft('${d.id}')">
@@ -378,6 +383,8 @@ async function runGenerate(postText, sourceUrl) {
 
 async function regenDraft(id) {
   const d = State.drafts.find(x=>x.id===id); if(!d) return;
+  const btn = document.querySelector(`.dcard[data-id="${id}"] .act.regen`);
+  if(btn){ btn.disabled=true; btn.style.opacity='0.5'; }
   toast('Regenerating…');
   try {
     const email = await AI.generateEmailDraft(
@@ -389,6 +396,7 @@ async function regenDraft(id) {
       renderCards(); toast('Email regenerated!');
     }
   } catch { toast('Regen failed — try again'); }
+  finally { if(btn){ btn.disabled=false; btn.style.opacity=''; } }
 }
 
 function copyDraft(id) {
