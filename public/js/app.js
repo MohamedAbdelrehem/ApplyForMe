@@ -346,25 +346,27 @@ function cleanJinaText(raw) {
 }
 
 // ── CLIPBOARD PASTE ────────────────────────────────────────────────
-async function pasteFromClipboard() {
+async function smartFetch() {
   const urlInput = document.getElementById('url-input');
 
-  // First try the modern Clipboard API (works on Android + desktop)
+  // If input already has something — just fetch it
+  if (urlInput.value.trim()) { fetchPost(); return; }
+
+  // Input is empty — paste first, then fetch
+  // Try modern Clipboard API (Android/desktop)
   if (navigator.clipboard?.readText) {
     try {
       const text = await navigator.clipboard.readText();
       if (text?.trim()) {
         urlInput.value = text.trim();
-        urlInput.focus();
-        if (text.trim().startsWith('http')) fetchPost();
-        else toast('Pasted — tap Fetch when ready');
+        fetchPost();
         return;
       }
-    } catch (_) { /* blocked on iOS — fall through to execCommand */ }
+    } catch (_) { /* iOS blocks async clipboard — fall through */ }
   }
 
-  // iOS fallback: temp input + execCommand('paste')
-  // Must happen synchronously inside the tap handler to keep the user gesture
+  // iOS fallback: execCommand must be synchronous within the tap gesture
+  // We can't call this after an await, so we do a second tap path
   const tmp = document.createElement('input');
   tmp.style.cssText = 'position:fixed;opacity:0;top:0;left:0;width:1px;height:1px;font-size:16px';
   document.body.appendChild(tmp);
@@ -375,15 +377,15 @@ async function pasteFromClipboard() {
 
   if (ok && pasted?.trim()) {
     urlInput.value = pasted.trim();
-    urlInput.focus();
-    if (pasted.trim().startsWith('http')) fetchPost();
-    else toast('Pasted — tap Fetch when ready');
+    fetchPost();
   } else {
-    // Last resort: just focus the real input so user can long-press paste
     urlInput.focus();
-    toast('Tap and hold the field to paste');
+    toast('Tap and hold the field → Paste');
   }
 }
+
+// Keep old name working for Enter key
+function pasteFromClipboard() { smartFetch(); }
 
 // ── FETCH + GENERATE ───────────────────────────────────────────────
 async function fetchPost() {
@@ -810,7 +812,14 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.querySelectorAll('.dcard-menu.open').forEach(m => m.classList.remove('open'));
   });
   document.addEventListener('click', () => { closeAllMenus(); });
-  document.getElementById('url-input').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();fetchPost();} });
+  document.getElementById('url-input').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();smartFetch();} });
+  document.getElementById('url-input').addEventListener('input', e => {
+    const btn = document.getElementById('fetch-btn');
+    const hasVal = e.target.value.trim().length > 0;
+    btn.innerHTML = hasVal
+      ? 'Fetch →'
+      : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Paste &amp; Fetch';
+  });
   document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('overlay')) closeSched(); });
   document.getElementById('paste-modal')?.addEventListener('click',e=>{ if(e.target===document.getElementById('paste-modal')) closePasteModal(); });
   document.getElementById('cv-file').addEventListener('change',e=>handleCv(e.target.files[0]));
