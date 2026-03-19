@@ -1,4 +1,4 @@
-const CACHE = 'fursa-v1';
+const CACHE = 'fursa-v2';
 const ASSETS = ['/', '/index.html', '/css/style.css', '/js/ai.js', '/js/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -14,8 +14,27 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+
+  // Handle Web Share Target — Android shares land here
+  if (url.pathname === '/share-target') {
+    const sharedUrl  = url.searchParams.get('url')  || '';
+    const sharedText = url.searchParams.get('text') || '';
+    // Pick the best value: prefer a URL, fall back to text (which may contain the URL)
+    const best = sharedUrl || extractUrl(sharedText) || sharedText;
+    // Redirect to home with the shared content as a query param
+    const redirect = '/?shared=' + encodeURIComponent(best.trim());
+    e.respondWith(Response.redirect(redirect, 302));
+    return;
+  }
+
   if (e.request.url.includes('/api/')) return;
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
 });
+
+function extractUrl(text) {
+  const m = text && text.match(/https?:\/\/[^\s]+/);
+  return m ? m[0] : '';
+}

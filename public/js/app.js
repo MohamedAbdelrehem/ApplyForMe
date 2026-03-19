@@ -810,6 +810,13 @@ function finishOnboarding() {
   setTimeout(() => { ob.classList.add('gone'); ob.style.display = 'none'; }, 420);
 }
 
+function openShortcutsGuide()  { document.getElementById('shortcuts-overlay').classList.add('open'); }
+function closeShortcutsGuide() { document.getElementById('shortcuts-overlay').classList.remove('open'); }
+function copyShortcutUrl() {
+  const url = 'https://fursa.app/?shared=[Shortcut Input]';
+  navigator.clipboard?.writeText(url).then(() => toast('URL copied!')).catch(() => toast('Copy: ' + url));
+}
+
 // ── INSTALL ───────────────────────────────────────────────────────
 let deferredInstall=null;
 const isIos=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -831,6 +838,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   showSplash();
   showOnboardingIfNeeded();
 
+  // Handle Web Share Target — Android shares land here via ?shared= param
+  const sharedParam = new URLSearchParams(location.search).get('shared');
+  if (sharedParam) {
+    history.replaceState({}, '', '/'); // clean the URL
+    const input = document.getElementById('url-input');
+    input.value = sharedParam;
+    // Small delay so app finishes rendering before fetch starts
+    setTimeout(() => fetchPost(), 400);
+  }
+
   if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
   if(isIos()&&!isStandalone()&&!localStorage.getItem('afm_ios_dismissed')) setTimeout(()=>showIosBanner(),1200);
 
@@ -847,6 +864,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Paste &amp; Fetch';
   });
   document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('overlay')) closeSched(); });
+  document.getElementById('shortcuts-overlay')?.addEventListener('click',e=>{ if(e.target===document.getElementById('shortcuts-overlay')) closeShortcutsGuide(); });
   document.getElementById('paste-modal')?.addEventListener('click',e=>{ if(e.target===document.getElementById('paste-modal')) closePasteModal(); });
   document.getElementById('cv-file').addEventListener('change',e=>handleCv(e.target.files[0]));
   document.getElementById('cv-upload-box').addEventListener('click',()=>document.getElementById('cv-file').click());

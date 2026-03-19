@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="apple-touch-icon" href="icons/icon-192-APP.png"/>
   <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
@@ -255,7 +255,64 @@
     </div>
 
     <button class="save-btn" onclick="saveProfile()">Save profile</button>
+
+    <!-- iOS Shortcut tip -->
+    <div class="ios-shortcut-tip" onclick="openShortcutsGuide()">
+      <div class="ios-shortcut-ico">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B4FCF" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M9 8l2 2 4-4"/></svg>
+      </div>
+      <div>
+        <div class="ios-shortcut-ttl">Share from LinkedIn on iOS</div>
+        <div class="ios-shortcut-sub">Set up a one-tap Shortcut — tap to see how</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A09890" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+
     <div style="height:16px"></div>
+  </div>
+
+  <!-- ═══════════════════════════════ iOS SHORTCUTS GUIDE ═══ -->
+  <div id="shortcuts-overlay">
+    <div class="sheet">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Share from LinkedIn on iOS</div>
+      <div class="sh-sub">Set this up once — share any job post to Fursa in one tap.</div>
+
+      <div class="sg-steps">
+        <div class="sg-step">
+          <div class="sg-num">1</div>
+          <div class="sg-txt">Open the <strong>Shortcuts</strong> app on your iPhone</div>
+        </div>
+        <div class="sg-step">
+          <div class="sg-num">2</div>
+          <div class="sg-txt">Tap <strong>+</strong> to create a new shortcut</div>
+        </div>
+        <div class="sg-step">
+          <div class="sg-num">3</div>
+          <div class="sg-txt">Tap <strong>Add Action</strong> → search <strong>"Open URL"</strong></div>
+        </div>
+        <div class="sg-step">
+          <div class="sg-num">4</div>
+          <div class="sg-txt">Set the URL to:<br><span class="sg-code" onclick="copyShortcutUrl()">https://fursa.app/?shared=<strong>[Shortcut Input]</strong></span></div>
+        </div>
+        <div class="sg-step">
+          <div class="sg-num">5</div>
+          <div class="sg-txt">Tap <strong>···</strong> (top right) → enable <strong>"Show in Share Sheet"</strong></div>
+        </div>
+        <div class="sg-step">
+          <div class="sg-num">6</div>
+          <div class="sg-txt">Name it <strong>"Apply with Fursa"</strong> and save</div>
+        </div>
+      </div>
+
+      <div class="tip-box" style="margin-bottom:16px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        On LinkedIn, tap Share → More → Apply with Fursa. The app opens and fetches the post automatically.
+      </div>
+
+      <button class="sh-cta" onclick="closeShortcutsGuide()">Got it</button>
+      <button class="sh-cancel" onclick="closeShortcutsGuide()">Close</button>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════ SCHEDULE SHEET ═══ -->

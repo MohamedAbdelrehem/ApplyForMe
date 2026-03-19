@@ -689,7 +689,7 @@ textarea.fi { resize:none; line-height:1.5; }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .splash-icon {
-  width: 80px; height: 80px; border-radius: 22px;
+  width: 80px; height: 80px; border-radius: 180px;
   box-shadow: 0 8px 32px rgba(200,75,47,0.22);
 }
 .splash-wordmark {
@@ -741,7 +741,7 @@ textarea.fi { resize:none; line-height:1.5; }
   margin-bottom: 8px;
 }
 .ob-logo-img {
-  width: 100px; height: 100px; border-radius: 26px;
+  width: 100px; height: 100px; border-radius: 180px;
   box-shadow: 0 8px 32px rgba(200,75,47,0.2);
 }
 .ob-icon-wrap {
@@ -795,6 +795,51 @@ textarea.fi { resize:none; line-height:1.5; }
   width: 52px; height: 52px; border-radius: 14px;
   box-shadow: 0 4px 16px rgba(200,75,47,0.18);
 }
+
+/* ── iOS SHORTCUT TIP ── */
+.ios-shortcut-tip {
+  display:flex; align-items:center; gap:12px;
+  margin:12px 20px 0; padding:13px 16px;
+  background:var(--pur-bg); border:1px solid var(--pur-bd);
+  border-radius:var(--r-lg); cursor:pointer;
+  transition:opacity 0.15s;
+}
+.ios-shortcut-tip:active { opacity:0.7; }
+.ios-shortcut-ico {
+  width:36px; height:36px; flex-shrink:0;
+  background:rgba(91,79,207,0.12); border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+}
+.ios-shortcut-ttl { font-size:13px; font-weight:700; color:var(--pur); font-family:var(--fd); }
+.ios-shortcut-sub { font-size:11px; color:var(--t3); margin-top:2px; }
+
+/* ── SHORTCUTS GUIDE SHEET ── */
+#shortcuts-overlay {
+  position:fixed; inset:0;
+  background:rgba(26,22,18,0.55);
+  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  display:none; align-items:flex-end; z-index:200;
+}
+#shortcuts-overlay.open { display:flex; }
+
+.sg-steps { display:flex; flex-direction:column; gap:12px; margin-bottom:16px; }
+.sg-step { display:flex; gap:12px; align-items:flex-start; }
+.sg-num {
+  width:22px; height:22px; flex-shrink:0; border-radius:50%;
+  background:var(--pur-bg); border:1px solid var(--pur-bd);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:var(--pur); font-family:var(--fd);
+}
+.sg-txt { font-size:13px; color:var(--t2); line-height:1.5; padding-top:2px; }
+.sg-txt strong { color:var(--t1); }
+.sg-code {
+  display:inline-block; margin-top:5px;
+  background:var(--s1); border:1px solid var(--bd2);
+  border-radius:var(--r-sm); padding:6px 10px;
+  font-size:11.5px; font-family:monospace; color:var(--t1);
+  cursor:pointer; word-break:break-all;
+}
+.sg-code:active { background:var(--s2); }
 
 /* ── SAFE AREA & STICKY HEADER ── */
 /* Covers the status bar so content never bleeds through it while scrolling */
