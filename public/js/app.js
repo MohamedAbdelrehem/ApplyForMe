@@ -751,6 +751,114 @@ async function autofillFromCv() {
   finally { btn.classList.remove('running'); }
 }
 
+// ── BACKUP / EXPORT / IMPORT ──────────────────────────────────────
+function buildBackupPayload() {
+  return JSON.stringify({
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    profile: State.profile,
+    drafts:  State.drafts,
+    links:   State.links,
+    stats:   State.stats
+  }, null, 2);
+}
+
+function exportBackup() {
+  const json = buildBackupPayload();
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href     = url;
+  a.download = `fursa-backup-${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded!');
+}
+
+function copyBackup() {
+  const json = buildBackupPayload();
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(json).then(() => toast('Backup JSON copied!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = json;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('Backup JSON copied!');
+  }
+}
+
+async function pasteBackup() {
+  let json = '';
+
+  // Modern Clipboard API (Android / desktop)
+  if (navigator.clipboard?.readText) {
+    try { json = await navigator.clipboard.readText(); } catch (_) {}
+  }
+
+  // iOS execCommand fallback (must be synchronous inside tap — already happened, so this is best-effort)
+  if (!json) {
+    const tmp = document.createElement('textarea');
+    tmp.style.cssText = 'position:fixed;opacity:0;top:0;left:0;width:1px;height:1px;font-size:16px';
+    document.body.appendChild(tmp);
+    tmp.focus();
+    document.execCommand('paste');
+    json = tmp.value;
+    document.body.removeChild(tmp);
+  }
+
+  json = (json || '').trim();
+  if (!json) { toast('Nothing in clipboard — copy your backup JSON first'); return; }
+
+  applyBackupJSON(json);
+}
+
+function importBackup(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { applyBackupJSON(e.target.result); input.value = ''; };
+  reader.readAsText(file);
+}
+
+function applyBackupJSON(raw) {
+  try {
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object') throw new Error('Invalid file');
+
+    if (Array.isArray(data.drafts)) {
+      const existingIds = new Set(State.drafts.map(d => d.id));
+      const newDrafts   = data.drafts.filter(d => !existingIds.has(d.id));
+      State.drafts = [...newDrafts, ...State.drafts];
+    }
+    if (Array.isArray(data.links)) {
+      const existingIds = new Set(State.links.map(l => l.id));
+      const newLinks    = data.links.filter(l => !existingIds.has(l.id));
+      State.links = [...newLinks, ...State.links];
+    }
+    if (data.profile && typeof data.profile === 'object') {
+      Object.entries(data.profile).forEach(([k, v]) => {
+        if (v && !State.profile[k]) State.profile[k] = v;
+      });
+    }
+    if (data.stats?.sent) {
+      State.stats.sent = Math.max(State.stats.sent || 0, data.stats.sent);
+    }
+
+    State.save();
+    loadProfileForm();
+    renderCards();
+    toast('Backup restored!');
+  } catch (err) {
+    toast('Import failed — not a valid Fursa backup');
+    console.error(err);
+  }
+}
+
 // ── SPLASH + ONBOARDING ───────────────────────────────────────────
 let _obIndex = 0;
 const OB_TOTAL = 4;

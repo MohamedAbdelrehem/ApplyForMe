@@ -256,6 +256,34 @@
 
     <button class="save-btn" onclick="saveProfile()">Save profile</button>
 
+    <!-- Backup & Restore -->
+    <div class="sec-div"></div>
+    <div class="sec-lbl">Backup &amp; Restore</div>
+    <div class="backup-section">
+      <div class="backup-desc">Export all your data (drafts, saved posts, profile) to a JSON file. Import it on any device to restore everything.</div>
+      <div class="backup-btns">
+        <button class="backup-btn backup-export" onclick="exportBackup()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export JSON
+        </button>
+        <button class="backup-btn backup-copy" onclick="copyBackup()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy JSON
+        </button>
+      </div>
+      <div class="backup-import-rows">
+        <label class="backup-import-row" for="import-file">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import backup file
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importBackup(this)"/>
+        </label>
+        <button class="backup-import-row backup-paste-row" onclick="pasteBackup()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+          Paste from clipboard
+        </button>
+      </div>
+    </div>
+
     <!-- iOS Shortcut tip -->
     <div class="ios-shortcut-tip" onclick="openShortcutsGuide()">
       <div class="ios-shortcut-ico">
