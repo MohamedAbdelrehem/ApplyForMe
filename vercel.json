@@ -1,8 +1,8 @@
 {
+  "cleanUrls": true,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/shortcuts/(.*)", "destination": "/public/shortcuts/$1" },
-    { "source": "/admin", "destination": "/public/admin.html" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ],
   "headers": [
