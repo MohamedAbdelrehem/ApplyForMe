@@ -812,9 +812,14 @@ function finishOnboarding() {
 
 function openShortcutsGuide()  { document.getElementById('shortcuts-overlay').classList.add('open'); }
 function closeShortcutsGuide() { document.getElementById('shortcuts-overlay').classList.remove('open'); }
-function copyShortcutUrl() {
-  const url = 'https://fursa.app/?shared=[Shortcut Input]';
-  navigator.clipboard?.writeText(url).then(() => toast('URL copied!')).catch(() => toast('Copy: ' + url));
+function importShortcut() {
+  const a = document.createElement('a');
+  a.href = '/shortcuts/ApplyWithFursa.shortcut';
+  a.download = 'ApplyWithFursa.shortcut';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Downloading shortcut file…');
 }
 
 // ── INSTALL ───────────────────────────────────────────────────────

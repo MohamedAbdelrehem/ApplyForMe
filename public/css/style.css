@@ -841,6 +841,17 @@ textarea.fi { resize:none; line-height:1.5; }
 }
 .sg-code:active { background:var(--s2); }
 
+.sg-import-btn {
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  width:100%; padding:14px 0; margin-top:4px;
+  background:#5B4FCF; color:white;
+  border:none; border-radius:var(--r); font-size:14px; font-weight:600;
+  cursor:pointer; letter-spacing:-0.01em;
+  box-shadow:0 2px 12px rgba(91,79,207,0.28);
+  -webkit-tap-highlight-color:transparent;
+}
+.sg-import-btn:active { opacity:0.88; transform:scale(0.985); }
+
 /* ── SAFE AREA & STICKY HEADER ── */
 /* Covers the status bar so content never bleeds through it while scrolling */
 .safe-top {
