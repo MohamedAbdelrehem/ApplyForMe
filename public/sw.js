@@ -1,4 +1,4 @@
-const CACHE = 'fursa-v2';
+const CACHE = 'fursa-v3';
 const ASSETS = ['/', '/index.html', '/css/style.css', '/js/ai.js', '/js/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -29,6 +29,7 @@ self.addEventListener('fetch', e => {
   }
 
   if (e.request.url.includes('/api/')) return;
+  if (e.request.url.includes('/shortcuts/')) return;
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );

@@ -1,16 +1,15 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/shortcuts/(.*)", "destination": "/public/shortcuts/$1" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ],
   "headers": [
     {
       "source": "/shortcuts/(.*).shortcut",
       "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/octet-stream"
-        }
+        { "key": "Content-Type", "value": "application/octet-stream" },
+        { "key": "Content-Disposition", "value": "attachment; filename=\"ApplyWithFursa.shortcut\"" }
       ]
     }
   ]
