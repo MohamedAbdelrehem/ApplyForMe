@@ -1,4 +1,4 @@
-const CACHE = 'fursa-v4';
+const CACHE = 'fursa-v3';
 const ASSETS = ['/', '/index.html', '/css/style.css', '/js/ai.js', '/js/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -20,9 +20,7 @@ self.addEventListener('fetch', e => {
   if (url.pathname === '/share-target') {
     const sharedUrl  = url.searchParams.get('url')  || '';
     const sharedText = url.searchParams.get('text') || '';
-    // Pick the best value: prefer a URL, fall back to text (which may contain the URL)
     const best = sharedUrl || extractUrl(sharedText) || sharedText;
-    // Redirect to home with the shared content as a query param
     const redirect = '/?shared=' + encodeURIComponent(best.trim());
     e.respondWith(Response.redirect(redirect, 302));
     return;
@@ -30,6 +28,22 @@ self.addEventListener('fetch', e => {
 
   if (e.request.url.includes('/api/')) return;
   if (e.request.url.includes('/shortcuts/')) return;
+
+  // Network-first for HTML pages — always get fresh markup
+  if (e.request.destination === 'document') {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Cache-first for everything else (CSS, JS, icons)
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
