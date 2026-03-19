@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Fursa Admin</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#F5F2EC;--s1:#EDEAE2;--s2:#E4E0D6;--s3:#D8D4C8;
+      --t1:#1A1612;--t2:#6B6358;--t3:#A09890;
+      --acc:#C84B2F;--acc-bg:rgba(200,75,47,.08);--acc-bd:rgba(200,75,47,.22);
+      --grn:#2D7A4F;--grn-bg:rgba(45,122,79,.08);--grn-bd:rgba(45,122,79,.22);
+      --bd:rgba(60,50,30,.10);--bd2:rgba(60,50,30,.16);
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;}
+
+    /* ── AUTH GATE ── */
+    #auth-gate{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+    .gate-box{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;}
+    .gate-logo{width:52px;height:52px;border-radius:14px;margin-bottom:14px;}
+    .gate-title{font-size:18px;font-weight:700;margin-bottom:4px;}
+    .gate-sub{font-size:13px;color:var(--t3);margin-bottom:24px;}
+    .gate-inp{width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:10px;font-size:15px;background:var(--bg);color:var(--t1);margin-bottom:12px;outline:none;font-family:inherit;}
+    .gate-inp:focus{border-color:var(--acc);}
+    .gate-btn{width:100%;padding:13px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .gate-err{color:var(--acc);font-size:13px;margin-top:8px;}
+
+    /* ── DASHBOARD LAYOUT ── */
+    #dashboard{display:none;}
+    .dash-header{background:#fff;border-bottom:1px solid var(--bd);padding:14px 24px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10;}
+    .dash-logo{width:28px;height:28px;border-radius:7px;}
+    .dash-title{font-size:15px;font-weight:700;flex:1;}
+    .dash-logout{font-size:12px;color:var(--t3);cursor:pointer;padding:6px 10px;border-radius:6px;}
+    .dash-logout:hover{color:var(--acc);background:var(--acc-bg);}
+
+    .dash-body{max-width:1080px;margin:0 auto;padding:24px 20px;}
+
+    /* ── DIFF STATS (week-over-week) ── */
+    .section-title{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:28px;}
+    .stat-card{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px 18px;}
+    .stat-label{font-size:11px;color:var(--t3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+    .stat-value{font-size:26px;font-weight:700;color:var(--t1);line-height:1.1;}
+    .stat-diff{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;margin-top:4px;padding:2px 7px;border-radius:99px;}
+    .diff-up  {background:var(--grn-bg);color:var(--grn);}
+    .diff-dn  {background:var(--acc-bg);color:var(--acc);}
+    .diff-zero{background:var(--s1);color:var(--t3);}
+    .stat-sub{font-size:11px;color:var(--t3);margin-top:2px;}
+
+    /* ── EVENTS FEED ── */
+    .two-col{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;}
+    @media(max-width:800px){.two-col{grid-template-columns:1fr;}}
+    .panel{background:#fff;border:1px solid var(--bd);border-radius:12px;overflow:hidden;}
+    .panel-hdr{padding:12px 16px;border-bottom:1px solid var(--bd);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;}
+    .panel-hdr span{font-size:11px;color:var(--t3);font-weight:400;}
+
+    /* ── USERS TABLE ── */
+    .filter-row{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bd);}
+    .filter-inp{flex:1;padding:7px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;background:var(--bg);color:var(--t1);outline:none;font-family:inherit;}
+    .filter-inp:focus{border-color:var(--acc);}
+    .icon-btn{padding:7px 12px;background:var(--s1);border:1px solid var(--bd);border-radius:7px;font-size:12px;cursor:pointer;color:var(--t2);font-family:inherit;white-space:nowrap;}
+    .icon-btn:hover{background:var(--s2);}
+    .export-btn{padding:7px 12px;background:var(--grn-bg);border:1px solid var(--grn-bd);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--grn);font-family:inherit;}
+
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    thead{background:var(--s1);}
+    th{padding:9px 14px;text-align:left;font-weight:600;font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--bd);white-space:nowrap;}
+    td{padding:10px 14px;border-bottom:1px solid var(--bd);vertical-align:middle;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:var(--s1);}
+
+    .user-cell{display:flex;align-items:center;gap:9px;}
+    .u-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--t2);}
+    .u-name{font-weight:600;font-size:13px;}
+    .u-email{font-size:11px;color:var(--t3);}
+    .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;}
+    .pill-grn{background:var(--grn-bg);color:var(--grn);}
+    .pill-gray{background:var(--s2);color:var(--t3);}
+    .detail-btn{padding:4px 10px;background:var(--s1);border:1px solid var(--bd);border-radius:6px;font-size:12px;cursor:pointer;color:var(--t2);font-family:inherit;}
+    .detail-btn:hover{background:var(--s2);}
+
+    /* ── EVENTS FEED PANEL ── */
+    .event-list{max-height:500px;overflow-y:auto;}
+    .event-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bd);}
+    .event-item:last-child{border-bottom:none;}
+    .ev-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+    .ev-dot-draft{background:#5B4FCF;}
+    .ev-dot-sent{background:var(--grn);}
+    .ev-dot-save{background:var(--acc);}
+    .ev-dot-cv{background:#A0620A;}
+    .ev-dot-signin{background:#2563EB;}
+    .ev-dot-share{background:#0F766E;}
+    .ev-type{font-size:12px;font-weight:600;color:var(--t1);}
+    .ev-meta{font-size:11px;color:var(--t3);margin-top:1px;}
+    .ev-time{font-size:10px;color:var(--t3);margin-left:auto;white-space:nowrap;padding-top:2px;}
+
+    /* ── DETAIL PANEL (slide-in) ── */
+    #detail-panel{position:fixed;right:0;top:0;bottom:0;width:400px;background:#fff;border-left:1px solid var(--bd);overflow-y:auto;z-index:100;transform:translateX(100%);transition:transform .26s ease;}
+    #detail-panel.open{transform:none;}
+    .dp-hdr{padding:16px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;}
+    .dp-close{margin-left:auto;font-size:20px;cursor:pointer;color:var(--t3);line-height:1;padding:4px;background:none;border:none;font-family:inherit;}
+    .dp-close:hover{color:var(--t1);}
+    .dp-section{padding:14px 18px;border-bottom:1px solid var(--bd);}
+    .dp-stitle{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+    .kv{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+    .kv-k{font-size:12px;color:var(--t3);}
+    .kv-v{font-size:12px;font-weight:600;color:var(--t1);max-width:210px;text-align:right;word-break:break-word;}
+    .draft-item{background:var(--s1);border-radius:8px;padding:9px 11px;margin-bottom:7px;}
+    .dr-co{font-size:12px;font-weight:700;}
+    .dr-role{font-size:11px;color:var(--t2);margin-bottom:1px;}
+    .dr-st{font-size:11px;color:var(--t3);}
+
+    /* ── LOADING ── */
+    .loading{text-align:center;padding:40px 20px;color:var(--t3);font-size:13px;}
+    .spinner{width:24px;height:24px;border-radius:50%;border:2px solid var(--s2);border-top-color:var(--acc);animation:spin .7s linear infinite;margin:0 auto 10px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+  </style>
+</head>
+<body>
+
+<!-- ── AUTH GATE ── -->
+<div id="auth-gate">
+  <div class="gate-box">
+    <img src="icons/icon-192.png" class="gate-logo" alt="Fursa"/>
+    <div class="gate-title">Fursa Admin</div>
+    <div class="gate-sub">Owner access only</div>
+    <input type="password" class="gate-inp" id="pw-inp" placeholder="Admin password" autocomplete="current-password"/>
+    <button class="gate-btn" onclick="checkPw()">Enter →</button>
+    <div class="gate-err" id="gate-err"></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard">
+  <div class="dash-header">
+    <img src="icons/icon-192.png" class="dash-logo" alt=""/>
+    <div class="dash-title">Fursa — Admin</div>
+    <span style="font-size:11px;color:var(--t3);margin-right:8px" id="last-refresh"></span>
+    <div class="dash-logout" onclick="sessionStorage.removeItem('fursa_admin');location.reload()">Sign out</div>
+  </div>
+
+  <div class="dash-body">
+
+    <!-- Week-over-week diff stats -->
+    <div class="section-title" style="margin-bottom:10px">This week vs last week</div>
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total users</div><div class="stat-value" id="st-users">—</div><div id="st-users-diff"></div></div>
+      <div class="stat-card"><div class="stat-label">New users (7d)</div><div class="stat-value" id="st-new">—</div><div id="st-new-diff"></div></div>
+      <div class="stat-card"><div class="stat-label">Drafts generated (7d)</div><div class="stat-value" id="st-drafts">—</div><div id="st-drafts-diff"></div></div>
+      <div class="stat-card"><div class="stat-label">Emails sent (7d)</div><div class="stat-value" id="st-sent">—</div><div id="st-sent-diff"></div></div>
+      <div class="stat-card"><div class="stat-label">Sign-ins (7d)</div><div class="stat-value" id="st-signins">—</div><div id="st-signins-diff"></div></div>
+    </div>
+
+    <!-- Main content: users table + live events -->
+    <div class="two-col">
+
+      <!-- Users table -->
+      <div class="panel">
+        <div class="panel-hdr">
+          Users <span id="user-count-lbl"></span>
+        </div>
+        <div class="filter-row">
+          <input class="filter-inp" id="search-inp" placeholder="Search name or email…" oninput="filterTable()"/>
+          <button class="icon-btn" onclick="loadAll()">↺</button>
+          <button class="export-btn" onclick="exportCSV()">↓ CSV</button>
+        </div>
+        <div id="table-wrap">
+          <div class="loading"><div class="spinner"></div>Loading…</div>
+        </div>
+      </div>
+
+      <!-- Live events feed -->
+      <div class="panel">
+        <div class="panel-hdr">Live events <span>last 50</span></div>
+        <div class="event-list" id="event-list">
+          <div class="loading"><div class="spinner"></div>Loading…</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL PANEL ── -->
+<div id="detail-panel">
+  <div class="dp-hdr">
+    <div><div style="font-size:14px;font-weight:700" id="dp-name"></div><div style="font-size:12px;color:var(--t3)" id="dp-email"></div></div>
+    <button class="dp-close" onclick="closeDetail()">×</button>
+  </div>
+  <div id="dp-body"></div>
+</div>
+
+<script type="module">
+// ════════════════════════════════════════════════════════════════
+// ADMIN CONFIG — fill these in before deploying
+// ════════════════════════════════════════════════════════════════
+const ADMIN_PASSWORD = 'Mohamed2001@'; // change this!
+
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDRSVpRy0g4hLFkDTcs2WXq1hp3VgXuZLM",
+  authDomain:        "fursa-apply.firebaseapp.com",
+  projectId:         "fursa-apply",
+  storageBucket:     "fursa-apply.firebasestorage.app",
+  messagingSenderId: "157251926590",
+  appId:             "1:157251926590:web:9f31f1d1eeae90e32f2f6f",
+  measurementId:     "G-D50C3JNNYP"
+};
+
+// ════════════════════════════════════════════════════════════════
+// Firebase init
+// ════════════════════════════════════════════════════════════════
+const FB_VER = '10.12.2';
+const FB_CDN = `https://www.gstatic.com/firebasejs/${FB_VER}`;
+const { initializeApp }           = await import(`${FB_CDN}/firebase-app.js`);
+const { getFirestore, collection, getDocs, doc, getDoc, query, orderBy, limit, where } = await import(`${FB_CDN}/firebase-firestore.js`);
+
+const app = initializeApp(FIREBASE_CONFIG);
+const db  = getFirestore(app);
+
+// ════════════════════════════════════════════════════════════════
+// Auth gate
+// ════════════════════════════════════════════════════════════════
+window.checkPw = () => {
+  if (document.getElementById('pw-inp').value === ADMIN_PASSWORD) {
+    sessionStorage.setItem('fursa_admin', '1');
+    document.getElementById('auth-gate').style.display  = 'none';
+    document.getElementById('dashboard').style.display  = 'block';
+    loadAll();
+  } else {
+    document.getElementById('gate-err').textContent = 'Wrong password.';
+  }
+};
+document.getElementById('pw-inp').addEventListener('keydown', e => { if(e.key==='Enter') window.checkPw(); });
+if (sessionStorage.getItem('fursa_admin') === '1') {
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadAll();
+}
+
+// ════════════════════════════════════════════════════════════════
+// Data loading
+// ════════════════════════════════════════════════════════════════
+let _allUsers  = [];
+let _allEvents = [];
+const NOW    = Date.now();
+const WEEK   = 7  * 86400 * 1000;
+const WEEK2  = 14 * 86400 * 1000;
+
+window.loadAll = async () => {
+  document.getElementById('last-refresh').textContent = 'Loading…';
+  await Promise.all([loadUsers(), loadEvents()]);
+  document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+};
+
+async function loadUsers() {
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    _allUsers  = [];
+
+    for (const docSnap of snap.docs) {
+      const u = docSnap.data();
+      const uid = docSnap.id;
+      let profile = {}, data = {};
+      try {
+        const [ps, ds] = await Promise.all([
+          getDoc(doc(db, `users/${uid}/profile`)),
+          getDoc(doc(db, `users/${uid}/data`)),
+        ]);
+        if (ps.exists()) profile = ps.data();
+        if (ds.exists()) data    = ds.data();
+      } catch(_) {}
+      _allUsers.push({ uid, ...u, _p: profile, _d: data });
+    }
+
+    _allUsers.sort((a,b) => (b.lastActiveAt?.toMillis?.() || 0) - (a.lastActiveAt?.toMillis?.() || 0));
+    updateStats();
+    renderTable(_allUsers);
+    document.getElementById('user-count-lbl').textContent = _allUsers.length + ' users';
+  } catch(e) {
+    document.getElementById('table-wrap').innerHTML = `<div class="loading" style="color:var(--acc)">Error: ${e.message}</div>`;
+  }
+}
+
+async function loadEvents() {
+  try {
+    // Collect events across all users (subcollections need group query)
+    // Using collectionGroup requires a Firestore index — instructions in INTEGRATION.md
+    _allEvents = [];
+    for (const u of _allUsers.slice(0, 30)) { // cap at 30 users to avoid rate limits
+      try {
+        const evSnap = await getDocs(query(
+          collection(db, `users/${u.uid}/events`),
+          orderBy('createdAt', 'desc'),
+          limit(5)
+        ));
+        evSnap.forEach(d => _allEvents.push({ ...d.data(), _uid: u.uid, _user: u }));
+      } catch(_) {}
+    }
+    _allEvents.sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+    renderEvents(_allEvents.slice(0, 50));
+  } catch(e) { console.warn('events load:', e.message); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Stats with week-over-week diff
+// ════════════════════════════════════════════════════════════════
+function updateStats() {
+  const thisWeekUsers = _allUsers.filter(u => (NOW - (u.createdAt?.toMillis?.() || u.lastActiveAt?.toMillis?.() || 0)) < WEEK).length;
+  const lastWeekUsers = _allUsers.filter(u => {
+    const t = u.createdAt?.toMillis?.() || 0;
+    return t > NOW - WEEK2 && t <= NOW - WEEK;
+  }).length;
+
+  const thisWeekActive = _allUsers.filter(u => (NOW - (u.lastActiveAt?.toMillis?.() || 0)) < WEEK).length;
+
+  // Count events this week vs last week
+  const evThisWeek = _allEvents.filter(e => (NOW - (e.createdAt?.toMillis?.() || 0)) < WEEK);
+  const evLastWeek = _allEvents.filter(e => {
+    const t = e.createdAt?.toMillis?.() || 0;
+    return t > NOW - WEEK2 && t <= NOW - WEEK;
+  });
+
+  const count = (evs, type) => evs.filter(e => e.type === type).length;
+
+  setStat('st-users',   _allUsers.length,                        null);
+  setStat('st-new',     thisWeekUsers,                           diff(thisWeekUsers, lastWeekUsers));
+  setStat('st-drafts',  count(evThisWeek,'draft_generated'),     diff(count(evThisWeek,'draft_generated'), count(evLastWeek,'draft_generated')));
+  setStat('st-sent',    count(evThisWeek,'email_sent'),          diff(count(evThisWeek,'email_sent'),      count(evLastWeek,'email_sent')));
+  setStat('st-signins', count(evThisWeek,'sign_in'),             diff(count(evThisWeek,'sign_in'),         count(evLastWeek,'sign_in')));
+}
+
+function setStat(id, val, diffEl) {
+  document.getElementById(id).textContent = val;
+  const diffId = id + '-diff';
+  const el = document.getElementById(diffId);
+  if (!el || diffEl === null) return;
+  el.innerHTML = diffEl;
+}
+
+function diff(thisW, lastW) {
+  if (lastW === 0 && thisW === 0) return `<span class="stat-diff diff-zero">— same</span>`;
+  if (lastW === 0) return `<span class="stat-diff diff-up">↑ new</span>`;
+  const pct = Math.round(((thisW - lastW) / lastW) * 100);
+  const abs = thisW - lastW;
+  if (abs > 0) return `<span class="stat-diff diff-up">↑ ${pct > 0 ? '+'+pct : pct}% vs last week</span>`;
+  if (abs < 0) return `<span class="stat-diff diff-dn">↓ ${pct}% vs last week</span>`;
+  return `<span class="stat-diff diff-zero">= same as last week</span>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// Users table
+// ════════════════════════════════════════════════════════════════
+function renderTable(users) {
+  if (!users.length) {
+    document.getElementById('table-wrap').innerHTML = `<div class="loading">No users found.</div>`;
+    return;
+  }
+  document.getElementById('table-wrap').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>User</th><th>Joined</th><th>Last active</th>
+        <th>Drafts</th><th>Sent</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>${users.map(u => userRow(u)).join('')}</tbody>
+    </table>`;
+}
+
+function userRow(u) {
+  const name     = [u._p?.firstName, u._p?.lastName].filter(Boolean).join(' ') || u.displayName || '—';
+  const email    = u.email || u._p?.authEmail || '—';
+  const photo    = u.photoUrl || u._p?.photoUrl || '';
+  const lastMs   = u.lastActiveAt?.toMillis?.() || 0;
+  const joinMs   = u.createdAt?.toMillis?.()    || lastMs;
+  const isActive = lastMs && (NOW - lastMs) < WEEK;
+  const ini      = name === '—' ? '?' : name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return `<tr>
+    <td><div class="user-cell">
+      ${photo ? `<img src="${photo}" class="u-avatar" alt=""/>` : `<div class="u-avatar">${_e(ini)}</div>`}
+      <div><div class="u-name">${_e(name)}</div><div class="u-email">${_e(email)}</div></div>
+    </div></td>
+    <td style="font-size:12px;color:var(--t2)">${joinMs ? fmtDate(joinMs) : '—'}</td>
+    <td style="font-size:12px;color:var(--t2)">${lastMs ? fmtAgo(lastMs) : '—'}</td>
+    <td style="font-weight:600">${u.draftCount || 0}</td>
+    <td style="font-weight:600;color:var(--grn)">${u.sentCount || 0}</td>
+    <td><span class="pill ${isActive ? 'pill-grn' : 'pill-gray'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+    <td><button class="detail-btn" onclick="openDetail('${u.uid}')">View →</button></td>
+  </tr>`;
+}
+
+window.filterTable = () => {
+  const q = document.getElementById('search-inp').value.toLowerCase();
+  if (!q) { renderTable(_allUsers); return; }
+  renderTable(_allUsers.filter(u =>
+    (u.displayName||'').toLowerCase().includes(q) ||
+    (u.email||'').toLowerCase().includes(q) ||
+    (u._p?.firstName||'').toLowerCase().includes(q)
+  ));
+};
+
+// ════════════════════════════════════════════════════════════════
+// Events feed
+// ════════════════════════════════════════════════════════════════
+const EV_DOTS = {
+  draft_generated: 'ev-dot-draft',
+  email_sent:      'ev-dot-sent',
+  job_saved:       'ev-dot-save',
+  cv_uploaded:     'ev-dot-cv',
+  sign_in:         'ev-dot-signin',
+  share_received:  'ev-dot-share',
+};
+const EV_LABELS = {
+  draft_generated: 'Draft generated',
+  email_sent:      'Email sent',
+  job_saved:       'Job saved',
+  cv_uploaded:     'CV uploaded',
+  sign_in:         'Sign in',
+  share_received:  'Share received',
+};
+
+function renderEvents(events) {
+  if (!events.length) {
+    document.getElementById('event-list').innerHTML = `<div class="loading" style="font-size:12px;padding:20px">No events yet</div>`;
+    return;
+  }
+  document.getElementById('event-list').innerHTML = events.map(e => {
+    const name  = e._user?._p?.firstName || e._user?.displayName?.split(' ')[0] || 'User';
+    const dot   = EV_DOTS[e.type]   || 'ev-dot-signin';
+    const label = EV_LABELS[e.type] || e.type;
+    const meta  = e.company ? `${e.company}${e.jobTitle ? ' · ' + e.jobTitle : ''}` : (e.method || e.fileName || '');
+    const t     = e.createdAt?.toMillis?.() || 0;
+    return `<div class="event-item">
+      <div class="ev-dot ${dot}" style="margin-top:3px"></div>
+      <div style="flex:1;min-width:0">
+        <div class="ev-type">${_e(label)}</div>
+        <div class="ev-meta">${_e(name)}${meta ? ' · ' + _e(meta) : ''}</div>
+      </div>
+      <div class="ev-time">${t ? fmtAgo(t) : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// Detail panel
+// ════════════════════════════════════════════════════════════════
+window.openDetail = (uid) => {
+  const u = _allUsers.find(x => x.uid === uid); if (!u) return;
+  const p = u._p || {}, d = u._d || {};
+  const drafts = Array.isArray(d.drafts) ? d.drafts : [];
+  const links  = Array.isArray(d.links)  ? d.links  : [];
+  const name   = [p.firstName, p.lastName].filter(Boolean).join(' ') || u.displayName || '—';
+  const email  = u.email || p.authEmail || '—';
+
+  document.getElementById('dp-name').textContent  = name;
+  document.getElementById('dp-email').textContent = email;
+  document.getElementById('dp-body').innerHTML = `
+    <div class="dp-section">
+      <div class="dp-stitle">Profile</div>
+      ${kv('Name',        [p.firstName, p.lastName].filter(Boolean).join(' ') || '—')}
+      ${kv('Email',       p.email || p.authEmail || '—')}
+      ${kv('Title',       p.currentTitle || '—')}
+      ${kv('Exp',         p.yearsExp ? p.yearsExp + ' yrs' : '—')}
+      ${kv('Location',    [p.city, p.country].filter(Boolean).join(', ') || '—')}
+      ${kv('Skills',      p.skills ? p.skills.slice(0,80) + (p.skills.length>80?'…':'') : '—')}
+      ${kv('UID',         `<span style="font-family:monospace;font-size:10px">${uid}</span>`)}
+    </div>
+    <div class="dp-section">
+      <div class="dp-stitle">Activity</div>
+      ${kv('Drafts',      drafts.length)}
+      ${kv('Sent',        d.stats?.sent || u.sentCount || 0)}
+      ${kv('Saved posts', links.length)}
+      ${kv('Last active', u.lastActiveAt?.toMillis ? fmtDate(u.lastActiveAt.toMillis()) : '—')}
+    </div>
+    ${drafts.length ? `
+    <div class="dp-section">
+      <div class="dp-stitle">Recent drafts (${drafts.length})</div>
+      ${drafts.slice(0,8).map(dr => `
+        <div class="draft-item">
+          <div class="dr-co">${_e(dr.company||'—')}</div>
+          <div class="dr-role">${_e(dr.jobTitle||'—')}</div>
+          <div class="dr-st">${dr.status||'draft'} · ${_e(dr.toEmail||'—')}</div>
+        </div>`).join('')}
+      ${drafts.length > 8 ? `<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px">+${drafts.length-8} more</div>` : ''}
+    </div>` : ''}
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+};
+window.closeDetail = () => document.getElementById('detail-panel').classList.remove('open');
+
+// ════════════════════════════════════════════════════════════════
+// CSV export
+// ════════════════════════════════════════════════════════════════
+window.exportCSV = () => {
+  const headers = ['UID','Name','Email','Title','City','Country','YearsExp','Skills','Drafts','Sent','LastActive'];
+  const rows = _allUsers.map(u => {
+    const p = u._p || {}, d = u._d || {};
+    return [
+      u.uid,
+      [p.firstName, p.lastName].filter(Boolean).join(' ') || u.displayName || '',
+      u.email || p.authEmail || '',
+      p.currentTitle || '', p.city || '', p.country || '', p.yearsExp || '',
+      (p.skills||'').replace(/,/g,';'),
+      u.draftCount || (Array.isArray(d.drafts) ? d.drafts.length : 0),
+      u.sentCount  || d.stats?.sent || 0,
+      u.lastActiveAt?.toMillis ? new Date(u.lastActiveAt.toMillis()).toISOString() : '',
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a    = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: `fursa-users-${new Date().toISOString().slice(0,10)}.csv`
+  });
+  a.click(); URL.revokeObjectURL(a.href);
+};
+
+// ════════════════════════════════════════════════════════════════
+// Utilities
+// ════════════════════════════════════════════════════════════════
+function _e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function kv(k, v) { return `<div class="kv"><span class="kv-k">${k}</span><span class="kv-v">${v}</span></div>`; }
+function fmtDate(ms) { return new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function fmtAgo(ms)  {
+  const s = Math.floor((NOW - ms) / 1000);
+  if (s < 60)    return 'just now';
+  if (s < 3600)  return Math.floor(s/60)   + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+</script>
+</body>
+</html>

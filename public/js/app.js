@@ -21,6 +21,7 @@ const State = {
     localStorage.setItem('afm_drafts',  JSON.stringify(this.drafts));
     localStorage.setItem('afm_links',   JSON.stringify(this.links));
     localStorage.setItem('afm_stats',   JSON.stringify(this.stats));
+    if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) Auth.syncNow();
   },
 
   addDraft(d)       { this.drafts.unshift(d); this.save(); },
@@ -466,6 +467,7 @@ async function runGenerate(postText, sourceUrl) {
     State.addDraft(draft); renderCards();
     document.getElementById('url-input').value = '';
     toast(`Draft ready — ${draft.company}`);
+    if (typeof Auth !== 'undefined') Auth.onDraftGenerated(draft);
 
   } catch (err) {
     console.error(err);
@@ -705,6 +707,7 @@ function cvRemindProceed() {
       State.save();
       renderCards();
       toast(State.profile.cvName ? `Mail opened — attach ${State.profile.cvName}!` : 'Mail app opened!');
+      if (typeof Auth !== 'undefined') Auth.onEmailSent(State.drafts.find(d => d.id === _pendingMailId));
     }
   }
   _pendingMailto = null;
@@ -995,8 +998,9 @@ function showIosBanner(){ document.getElementById('ios-banner').classList.add('s
 function dismissIos(){ document.getElementById('ios-banner').classList.remove('show'); localStorage.setItem('afm_ios_dismissed','1'); }
 
 // ── INIT ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', async () => {
   State.load();
+  if (typeof Auth !== 'undefined') await Auth.init();
   const name=State.profile.firstName;
   if(name) document.getElementById('greeting-name').textContent=name;
   renderCards(); loadProfileForm(); refreshStats();
