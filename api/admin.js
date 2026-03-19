@@ -51,10 +51,9 @@ export default async function handler(req, res) {
         let profile = {}, data = {};
         try {
           const [ps, ds] = await Promise.all([
-            db.doc(`users/${uid}/profile/profile`).get(),
-            db.doc(`users/${uid}/data/data`).get(),
+            db.doc(`users/${uid}/profile/main`).get(),
+            db.doc(`users/${uid}/data/main`).get(),
           ]);
-          // profile and data are stored as single docs — try both path styles
           if (ps.exists) profile = ps.data() || {};
           if (ds.exists) data    = ds.data() || {};
         } catch (_) {}

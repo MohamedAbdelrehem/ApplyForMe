@@ -135,8 +135,8 @@ const Auth = (() => {
       const { doc, setDoc, serverTimestamp } = dbMod;
       const ts = serverTimestamp();
       await Promise.all([
-        setDoc(doc(db, `users/${uid()}/profile`), { ...State.profile, updatedAt: ts }, { merge: true }),
-        setDoc(doc(db, `users/${uid()}/data`), {
+        setDoc(doc(db, `users/${uid()}/profile/main`), { ...State.profile, updatedAt: ts }, { merge: true }),
+        setDoc(doc(db, `users/${uid()}/data/main`), {
           drafts: State.drafts.slice(0, 200),
           links:  State.links.slice(0, 500),
           stats:  State.stats, updatedAt: ts
@@ -160,8 +160,8 @@ const Auth = (() => {
       const { db, dbMod } = await ensureFirebase();
       const { doc, getDoc } = dbMod;
       const [pSnap, dSnap] = await Promise.all([
-        getDoc(doc(db, `users/${uid()}/profile`)),
-        getDoc(doc(db, `users/${uid()}/data`)),
+        getDoc(doc(db, `users/${uid()}/profile/main`)),
+        getDoc(doc(db, `users/${uid()}/data/main`)),
       ]);
       if (pSnap.exists()) {
         Object.entries(pSnap.data()).forEach(([k, v]) => { if (v && !State.profile[k]) State.profile[k] = v; });
