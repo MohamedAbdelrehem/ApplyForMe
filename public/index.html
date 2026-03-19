@@ -306,33 +306,17 @@
       <div class="sh-title">Share from LinkedIn on iOS</div>
       <div class="sh-sub">Import the shortcut once — share any job post to Fursa in one tap.</div>
 
-      <!-- Download CTA -->
       <button class="sg-import-btn" onclick="importShortcut()">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download "Apply with Fursa" Shortcut
       </button>
 
       <div class="sg-steps" style="margin-top:20px">
-        <div class="sg-step">
-          <div class="sg-num">1</div>
-          <div class="sg-txt">Tap <strong>Download Shortcut</strong> above</div>
-        </div>
-        <div class="sg-step">
-          <div class="sg-num">2</div>
-          <div class="sg-txt">Tap <strong>Save</strong> in the download prompt → choose <strong>Files</strong> → save button</div>
-        </div>
-        <div class="sg-step">
-          <div class="sg-num">3</div>
-          <div class="sg-txt">Choose <strong>OPEN IN…</strong> → choose <strong>Shortcuts</strong></div>
-        </div>
-        <div class="sg-step">
-          <div class="sg-num">4</div>
-          <div class="sg-txt">Tap <strong>Add Shortcut</strong> — import done!</div>
-        </div>
-        <div class="sg-step">
-          <div class="sg-num">5</div>
-          <div class="sg-txt">On LinkedIn, tap <strong>Share → More → Apply with Fursa</strong> ✓</div>
-        </div>
+        <div class="sg-step"><div class="sg-num">1</div><div class="sg-txt">Tap <strong>Download Shortcut</strong> above</div></div>
+        <div class="sg-step"><div class="sg-num">2</div><div class="sg-txt">Tap <strong>Save</strong> in the download prompt → choose <strong>Files</strong> → save button</div></div>
+        <div class="sg-step"><div class="sg-num">3</div><div class="sg-txt">Choose <strong>OPEN IN…</strong> → choose <strong>Shortcuts</strong></div></div>
+        <div class="sg-step"><div class="sg-num">4</div><div class="sg-txt">Tap <strong>Add Shortcut</strong> — import done!</div></div>
+        <div class="sg-step"><div class="sg-num">5</div><div class="sg-txt">On LinkedIn, tap <strong>Share → More → Apply with Fursa</strong> ✓</div></div>
       </div>
 
       <div class="tip-box" style="margin-bottom:16px;margin-top:4px">
@@ -363,10 +347,39 @@
       </div>
       <div class="tip-box">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        "Right now" opens your mail app with CV pre-attached and draft pre-filled.
+        "Right now" opens your mail app — you'll see a reminder to attach your CV.
       </div>
       <button class="sh-cta" onclick="confirmSched()">Confirm</button>
       <button class="sh-cancel" onclick="closeSched()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ PASTE MODAL ═══ -->
+  <div id="paste-modal">
+    <div class="sheet">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Paste job post</div>
+      <div class="sh-sub" id="paste-modal-sub">Copy all the text from the job post and paste it below.</div>
+      <div id="paste-url-display" style="font-size:11px;color:var(--t3);margin-bottom:12px;word-break:break-all;"></div>
+      <textarea id="paste-textarea" class="fi" rows="8" placeholder="Paste the full job description here…" style="margin-bottom:12px"></textarea>
+      <button class="sh-cta" onclick="confirmPaste()">Analyze this post →</button>
+      <button class="sh-cancel" onclick="closePasteModal()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════ CV REMINDER MODAL ═══ -->
+  <div id="cv-remind-modal" class="cv-remind-backdrop">
+    <div class="cv-remind-sheet">
+      <div class="cv-remind-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C84B2F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </div>
+      <div class="cv-remind-title">Don't forget your CV</div>
+      <div class="cv-remind-body" id="cv-remind-body">
+        Your mail app is about to open.<br>Attach your CV before hitting send.
+      </div>
+      <div class="cv-remind-filename" id="cv-remind-filename"></div>
+      <button class="cv-remind-cta" id="cv-remind-cta" onclick="cvRemindProceed()">Open Mail App →</button>
+      <button class="sh-cancel" onclick="cvRemindCancel()">Cancel</button>
     </div>
   </div>
 

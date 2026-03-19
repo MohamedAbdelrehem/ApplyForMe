@@ -929,3 +929,78 @@ textarea.fi { resize:none; line-height:1.5; }
 .screen {
   padding-top: 0 !important;
 }
+/* ── PASTE MODAL ── */
+#paste-modal {
+  position:fixed; inset:0;
+  background:rgba(26,22,18,0.55);
+  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  display:none; align-items:flex-end; z-index:200;
+}
+#paste-modal.open { display:flex; }
+
+/* ── CV REMINDER MODAL ── */
+.cv-remind-backdrop {
+  position: fixed; inset: 0; z-index: 250;
+  background: rgba(26,22,18,0.55);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.cv-remind-backdrop.open { display: flex; }
+
+.cv-remind-sheet {
+  width: 100%; max-width: 480px; margin: 0 auto;
+  background: var(--bg);
+  border-radius: 22px 22px 0 0;
+  border: 1px solid var(--bd2); border-bottom: none;
+  padding: 0 20px calc(20px + env(safe-area-inset-bottom));
+  text-align: center;
+  animation: sheetUp 0.26s cubic-bezier(0.22,1,0.36,1);
+}
+
+.cv-remind-icon {
+  width: 56px; height: 56px;
+  background: var(--acc-bg);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 20px auto 14px;
+  border: 1px solid var(--acc-bd);
+}
+
+.cv-remind-title {
+  font-family: var(--fd);
+  font-size: 20px; font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--t1); margin-bottom: 6px;
+}
+
+.cv-remind-body {
+  font-size: 13px; color: var(--t2);
+  line-height: 1.6; margin-bottom: 16px;
+}
+
+.cv-remind-filename {
+  display: none;
+  align-items: center; justify-content: center; gap: 7px;
+  background: var(--acc-bg);
+  border: 1px solid var(--acc-bd);
+  color: var(--acc);
+  font-size: 13px; font-weight: 600;
+  font-family: var(--fd);
+  border-radius: var(--r-md);
+  padding: 11px 16px;
+  margin-bottom: 18px;
+}
+.cv-remind-filename.show { display: flex; }
+
+.cv-remind-cta {
+  width: 100%;
+  background: var(--acc); color: #fff;
+  border: none; border-radius: var(--r-md);
+  padding: 14px; font-size: 15px; font-weight: 700;
+  font-family: var(--fd); cursor: pointer;
+  letter-spacing: 0.01em; -webkit-appearance: none;
+  transition: opacity 0.15s;
+  box-shadow: 0 2px 8px rgba(200,75,47,0.22);
+  margin-bottom: 0;
+}
+.cv-remind-cta:active { opacity: 0.78; }

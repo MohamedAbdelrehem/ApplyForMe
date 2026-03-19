@@ -642,26 +642,79 @@ function selectOpt(el,val){
 }
 
 function confirmSched() {
-  const id=State.activeCard, opt=State.schedOpt;
-  const d=State.drafts.find(x=>x.id===id); if(!d){closeSched();return;}
+  const id  = State.activeCard;
+  const opt = State.schedOpt;
+  const d   = State.drafts.find(x => x.id === id);
+  if (!d) { closeSched(); return; }
 
-  if(opt==='now'){
-    // Build mailto — CV attach note in body since browsers can't attach files
-    const cvNote = State.profile.cvName ? `\n\n[Please note: attach ${State.profile.cvName} before sending]` : '';
-    const mailto = `mailto:${encodeURIComponent(d.toEmail)}?subject=${encodeURIComponent(d.subject)}&body=${encodeURIComponent(d.body+cvNote)}`;
-    window.open(mailto,'_blank');
-    State.updateDraft(id,{status:'sent'}); State.stats.sent++; State.save();
-    renderCards();
-    toast(State.profile.cvName ? `Mail opened — attach ${State.profile.cvName}!` : 'Mail app opened!');
+  if (opt === 'now') {
+    closeSched();
+    // Build mailto and pass to CV reminder — no note appended to body
+    const mailto = `mailto:${encodeURIComponent(d.toEmail)}?subject=${encodeURIComponent(d.subject)}&body=${encodeURIComponent(d.body)}`;
+    openCvRemind(id, mailto);
   } else {
     const labels = { morning:'Tomorrow 9am', afternoon:'Tomorrow 2pm', custom:'' };
-    const lbl = opt==='custom'
-      ? (()=>{ const date=document.getElementById('custom-date').value, time=document.getElementById('custom-time').value; return(date&&time)?`${time} · ${date}`:'Custom time'; })()
+    const lbl = opt === 'custom'
+      ? (() => {
+          const date = document.getElementById('custom-date').value;
+          const time = document.getElementById('custom-time').value;
+          return (date && time) ? `${time} · ${date}` : 'Custom time';
+        })()
       : labels[opt];
-    State.updateDraft(id,{status:'scheduled',schedLabel:lbl});
-    renderCards(); toast(`Scheduled: ${lbl}`);
+    State.updateDraft(id, { status:'scheduled', schedLabel:lbl });
+    renderCards();
+    toast(`Scheduled: ${lbl}`);
+    closeSched();
   }
-  closeSched();
+}
+
+// ── CV REMIND MODAL ───────────────────────────────────────────────
+let _pendingMailto = null;
+let _pendingMailId = null;
+
+function openCvRemind(draftId, mailto) {
+  _pendingMailto = mailto;
+  _pendingMailId = draftId;
+
+  const cvName  = State.profile.cvName;
+  const bodyEl  = document.getElementById('cv-remind-body');
+  const fileEl  = document.getElementById('cv-remind-filename');
+  const ctaEl   = document.getElementById('cv-remind-cta');
+
+  if (cvName) {
+    bodyEl.innerHTML = 'Your mail app is about to open.<br>Attach your CV before hitting send.';
+    fileEl.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${esc(cvName)}`;
+    fileEl.classList.add('show');
+    ctaEl.textContent = 'Open Mail App →';
+  } else {
+    bodyEl.innerHTML = 'Your mail app is about to open — but you haven\'t uploaded a CV yet.<br><br>Go to <strong>Profile</strong> to add one so recruiters have your full details.';
+    fileEl.classList.remove('show');
+    ctaEl.textContent = 'Continue anyway →';
+  }
+
+  document.getElementById('cv-remind-modal').classList.add('open');
+}
+
+function cvRemindProceed() {
+  document.getElementById('cv-remind-modal').classList.remove('open');
+  if (_pendingMailto) {
+    window.open(_pendingMailto, '_blank');
+    if (_pendingMailId) {
+      State.updateDraft(_pendingMailId, { status:'sent' });
+      State.stats.sent++;
+      State.save();
+      renderCards();
+      toast(State.profile.cvName ? `Mail opened — attach ${State.profile.cvName}!` : 'Mail app opened!');
+    }
+  }
+  _pendingMailto = null;
+  _pendingMailId = null;
+}
+
+function cvRemindCancel() {
+  document.getElementById('cv-remind-modal').classList.remove('open');
+  _pendingMailto = null;
+  _pendingMailId = null;
 }
 
 // ── PROFILE ───────────────────────────────────────────────────────
