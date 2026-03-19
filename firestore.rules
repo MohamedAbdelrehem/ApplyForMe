@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Each user can only read/write their own data
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      match /profile/{doc} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+      match /data/{doc} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+      match /events/{doc} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // No other reads/writes allowed (admin goes through server-side API)
+  }
+}

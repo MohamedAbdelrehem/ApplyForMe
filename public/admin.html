@@ -137,7 +137,7 @@
     <img src="icons/icon-192.png" class="dash-logo" alt=""/>
     <div class="dash-title">Fursa — Admin</div>
     <span style="font-size:11px;color:var(--t3);margin-right:8px" id="last-refresh"></span>
-    <div class="dash-logout" onclick="sessionStorage.removeItem('fursa_admin');location.reload()">Sign out</div>
+    <div class="dash-logout" onclick="sessionStorage.removeItem('fursa_admin_pw');location.reload()">Sign out</div>
   </div>
 
   <div class="dash-body">
@@ -193,53 +193,56 @@
 
 <script type="module">
 // ════════════════════════════════════════════════════════════════
-// ADMIN CONFIG — fill these in before deploying
+// ADMIN CONFIG
+// Password is now stored in Vercel env var ADMIN_PASSWORD — not here.
+// Enter it in the login box; it's sent as a header to /api/admin.
 // ════════════════════════════════════════════════════════════════
-const ADMIN_PASSWORD = 'Mohamed2001@'; // change this!
-
-const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyDRSVpRy0g4hLFkDTcs2WXq1hp3VgXuZLM",
-  authDomain:        "fursa-apply.firebaseapp.com",
-  projectId:         "fursa-apply",
-  storageBucket:     "fursa-apply.firebasestorage.app",
-  messagingSenderId: "157251926590",
-  appId:             "1:157251926590:web:9f31f1d1eeae90e32f2f6f",
-  measurementId:     "G-D50C3JNNYP"
-};
+let _adminPassword = '';
 
 // ════════════════════════════════════════════════════════════════
-// Firebase init
+// Auth gate — password is validated server-side by /api/admin
 // ════════════════════════════════════════════════════════════════
-const FB_VER = '10.12.2';
-const FB_CDN = `https://www.gstatic.com/firebasejs/${FB_VER}`;
-const { initializeApp }           = await import(`${FB_CDN}/firebase-app.js`);
-const { getFirestore, collection, getDocs, doc, getDoc, query, orderBy, limit, where } = await import(`${FB_CDN}/firebase-firestore.js`);
-
-const app = initializeApp(FIREBASE_CONFIG);
-const db  = getFirestore(app);
-
-// ════════════════════════════════════════════════════════════════
-// Auth gate
-// ════════════════════════════════════════════════════════════════
-window.checkPw = () => {
-  if (document.getElementById('pw-inp').value === ADMIN_PASSWORD) {
-    sessionStorage.setItem('fursa_admin', '1');
-    document.getElementById('auth-gate').style.display  = 'none';
-    document.getElementById('dashboard').style.display  = 'block';
-    loadAll();
-  } else {
-    document.getElementById('gate-err').textContent = 'Wrong password.';
+window.checkPw = async () => {
+  const pw = document.getElementById('pw-inp').value;
+  const btn = document.querySelector('.gate-btn');
+  btn.textContent = 'Checking…'; btn.disabled = true;
+  try {
+    const r = await fetch('/api/admin?action=users', {
+      headers: { 'x-admin-password': pw }
+    });
+    if (r.status === 401) {
+      document.getElementById('gate-err').textContent = 'Wrong password.';
+      btn.textContent = 'Enter →'; btn.disabled = false;
+      return;
+    }
+    if (!r.ok) throw new Error(await r.text());
+    _adminPassword = pw;
+    sessionStorage.setItem('fursa_admin_pw', pw);
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    const data = await r.json();
+    _allUsers = data.users || [];
+    _allUsers.sort((a,b) => (b.lastActiveAt||0) - (a.lastActiveAt||0));
+    updateStats();
+    renderTable(_allUsers);
+    document.getElementById('user-count-lbl').textContent = _allUsers.length + ' users';
+    await loadEvents();
+    document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('gate-err').textContent = 'Error: ' + e.message;
+    btn.textContent = 'Enter →'; btn.disabled = false;
   }
 };
 document.getElementById('pw-inp').addEventListener('keydown', e => { if(e.key==='Enter') window.checkPw(); });
-if (sessionStorage.getItem('fursa_admin') === '1') {
-  document.getElementById('auth-gate').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  loadAll();
+// Auto-login if password was saved this session
+const _savedPw = sessionStorage.getItem('fursa_admin_pw');
+if (_savedPw) {
+  document.getElementById('pw-inp').value = _savedPw;
+  window.checkPw();
 }
 
 // ════════════════════════════════════════════════════════════════
-// Data loading
+// Data loading — all via /api/admin (Firebase Admin SDK server-side)
 // ════════════════════════════════════════════════════════════════
 let _allUsers  = [];
 let _allEvents = [];
@@ -249,85 +252,67 @@ const WEEK2  = 14 * 86400 * 1000;
 
 window.loadAll = async () => {
   document.getElementById('last-refresh').textContent = 'Loading…';
-  await Promise.all([loadUsers(), loadEvents()]);
-  document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
-};
-
-async function loadUsers() {
   try {
-    const snap = await getDocs(collection(db, 'users'));
-    _allUsers  = [];
+    const [uRes, eRes] = await Promise.all([
+      fetch('/api/admin?action=users',  { headers: { 'x-admin-password': _adminPassword } }),
+      fetch('/api/admin?action=events', { headers: { 'x-admin-password': _adminPassword } }),
+    ]);
+    if (!uRes.ok) throw new Error((await uRes.json()).error || uRes.status);
+    if (!eRes.ok) throw new Error((await eRes.json()).error || eRes.status);
 
-    for (const docSnap of snap.docs) {
-      const u = docSnap.data();
-      const uid = docSnap.id;
-      let profile = {}, data = {};
-      try {
-        const [ps, ds] = await Promise.all([
-          getDoc(doc(db, `users/${uid}/profile`)),
-          getDoc(doc(db, `users/${uid}/data`)),
-        ]);
-        if (ps.exists()) profile = ps.data();
-        if (ds.exists()) data    = ds.data();
-      } catch(_) {}
-      _allUsers.push({ uid, ...u, _p: profile, _d: data });
-    }
+    const uData = await uRes.json();
+    const eData = await eRes.json();
 
-    _allUsers.sort((a,b) => (b.lastActiveAt?.toMillis?.() || 0) - (a.lastActiveAt?.toMillis?.() || 0));
+    _allUsers  = uData.users  || [];
+    _allEvents = eData.events || [];
+
     updateStats();
     renderTable(_allUsers);
+    renderEvents(_allEvents);
     document.getElementById('user-count-lbl').textContent = _allUsers.length + ' users';
+    document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch(e) {
     document.getElementById('table-wrap').innerHTML = `<div class="loading" style="color:var(--acc)">Error: ${e.message}</div>`;
+    document.getElementById('last-refresh').textContent = 'Failed';
   }
-}
+};
 
 async function loadEvents() {
   try {
-    // Collect events across all users (subcollections need group query)
-    // Using collectionGroup requires a Firestore index — instructions in INTEGRATION.md
-    _allEvents = [];
-    for (const u of _allUsers.slice(0, 30)) { // cap at 30 users to avoid rate limits
-      try {
-        const evSnap = await getDocs(query(
-          collection(db, `users/${u.uid}/events`),
-          orderBy('createdAt', 'desc'),
-          limit(5)
-        ));
-        evSnap.forEach(d => _allEvents.push({ ...d.data(), _uid: u.uid, _user: u }));
-      } catch(_) {}
-    }
-    _allEvents.sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-    renderEvents(_allEvents.slice(0, 50));
-  } catch(e) { console.warn('events load:', e.message); }
+    const r = await fetch('/api/admin?action=events', { headers: { 'x-admin-password': _adminPassword } });
+    if (!r.ok) return;
+    const data = await r.json();
+    _allEvents = data.events || [];
+    renderEvents(_allEvents);
+    updateStats();
+  } catch(_) {}
 }
 
 // ════════════════════════════════════════════════════════════════
 // Stats with week-over-week diff
 // ════════════════════════════════════════════════════════════════
 function updateStats() {
-  const thisWeekUsers = _allUsers.filter(u => (NOW - (u.createdAt?.toMillis?.() || u.lastActiveAt?.toMillis?.() || 0)) < WEEK).length;
+  const t = (u, field) => u[field] || 0;
+
+  const thisWeekUsers = _allUsers.filter(u => (NOW - t(u,'createdAt')) < WEEK && t(u,'createdAt') > 0).length;
   const lastWeekUsers = _allUsers.filter(u => {
-    const t = u.createdAt?.toMillis?.() || 0;
-    return t > NOW - WEEK2 && t <= NOW - WEEK;
+    const ts = t(u,'createdAt');
+    return ts > NOW - WEEK2 && ts <= NOW - WEEK;
   }).length;
 
-  const thisWeekActive = _allUsers.filter(u => (NOW - (u.lastActiveAt?.toMillis?.() || 0)) < WEEK).length;
-
-  // Count events this week vs last week
-  const evThisWeek = _allEvents.filter(e => (NOW - (e.createdAt?.toMillis?.() || 0)) < WEEK);
+  const evThisWeek = _allEvents.filter(e => (NOW - (e.createdAt||0)) < WEEK);
   const evLastWeek = _allEvents.filter(e => {
-    const t = e.createdAt?.toMillis?.() || 0;
-    return t > NOW - WEEK2 && t <= NOW - WEEK;
+    const ts = e.createdAt || 0;
+    return ts > NOW - WEEK2 && ts <= NOW - WEEK;
   });
 
   const count = (evs, type) => evs.filter(e => e.type === type).length;
 
-  setStat('st-users',   _allUsers.length,                        null);
-  setStat('st-new',     thisWeekUsers,                           diff(thisWeekUsers, lastWeekUsers));
-  setStat('st-drafts',  count(evThisWeek,'draft_generated'),     diff(count(evThisWeek,'draft_generated'), count(evLastWeek,'draft_generated')));
-  setStat('st-sent',    count(evThisWeek,'email_sent'),          diff(count(evThisWeek,'email_sent'),      count(evLastWeek,'email_sent')));
-  setStat('st-signins', count(evThisWeek,'sign_in'),             diff(count(evThisWeek,'sign_in'),         count(evLastWeek,'sign_in')));
+  setStat('st-users',   _allUsers.length,                    null);
+  setStat('st-new',     thisWeekUsers,                       diff(thisWeekUsers, lastWeekUsers));
+  setStat('st-drafts',  count(evThisWeek,'draft_generated'), diff(count(evThisWeek,'draft_generated'), count(evLastWeek,'draft_generated')));
+  setStat('st-sent',    count(evThisWeek,'email_sent'),      diff(count(evThisWeek,'email_sent'),      count(evLastWeek,'email_sent')));
+  setStat('st-signins', count(evThisWeek,'sign_in'),         diff(count(evThisWeek,'sign_in'),         count(evLastWeek,'sign_in')));
 }
 
 function setStat(id, val, diffEl) {
@@ -370,8 +355,8 @@ function userRow(u) {
   const name     = [u._p?.firstName, u._p?.lastName].filter(Boolean).join(' ') || u.displayName || '—';
   const email    = u.email || u._p?.authEmail || '—';
   const photo    = u.photoUrl || u._p?.photoUrl || '';
-  const lastMs   = u.lastActiveAt?.toMillis?.() || 0;
-  const joinMs   = u.createdAt?.toMillis?.()    || lastMs;
+  const lastMs   = u.lastActiveAt || 0;
+  const joinMs   = u.createdAt    || lastMs;
   const isActive = lastMs && (NOW - lastMs) < WEEK;
   const ini      = name === '—' ? '?' : name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   return `<tr>
@@ -428,7 +413,7 @@ function renderEvents(events) {
     const dot   = EV_DOTS[e.type]   || 'ev-dot-signin';
     const label = EV_LABELS[e.type] || e.type;
     const meta  = e.company ? `${e.company}${e.jobTitle ? ' · ' + e.jobTitle : ''}` : (e.method || e.fileName || '');
-    const t     = e.createdAt?.toMillis?.() || 0;
+    const t     = e.createdAt || 0;
     return `<div class="event-item">
       <div class="ev-dot ${dot}" style="margin-top:3px"></div>
       <div style="flex:1;min-width:0">
@@ -469,7 +454,7 @@ window.openDetail = (uid) => {
       ${kv('Drafts',      drafts.length)}
       ${kv('Sent',        d.stats?.sent || u.sentCount || 0)}
       ${kv('Saved posts', links.length)}
-      ${kv('Last active', u.lastActiveAt?.toMillis ? fmtDate(u.lastActiveAt.toMillis()) : '—')}
+      ${kv('Last active', u.lastActiveAt ? fmtDate(u.lastActiveAt) : '—')}
     </div>
     ${drafts.length ? `
     <div class="dp-section">
@@ -502,7 +487,7 @@ window.exportCSV = () => {
       (p.skills||'').replace(/,/g,';'),
       u.draftCount || (Array.isArray(d.drafts) ? d.drafts.length : 0),
       u.sentCount  || d.stats?.sent || 0,
-      u.lastActiveAt?.toMillis ? new Date(u.lastActiveAt.toMillis()).toISOString() : '',
+      u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : '',
     ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
   });
   const csv  = [headers.join(','), ...rows].join('\n');
