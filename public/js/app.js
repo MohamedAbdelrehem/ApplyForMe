@@ -430,6 +430,12 @@ async function fetchPost() {
 }
 
 async function runGenerate(postText, sourceUrl) {
+  // Gate: require name + email before first generation
+  if (!_profileComplete()) {
+    openProfileGate(postText, sourceUrl);
+    return;
+  }
+
   const btn  = document.getElementById('fetch-btn');
   const ind  = document.getElementById('fetch-ind');
   const step = document.getElementById('fetch-step');
@@ -918,6 +924,143 @@ function applyBackupJSON(raw) {
   }
 }
 
+// ── PROFILE GATE ──────────────────────────────────────────────────
+// Intercepts the first generation attempt if name+email are missing.
+// Stores the pending job text, shows the gate, then resumes automatically.
+
+let _pendingGateText = null;
+let _pendingGateUrl  = null;
+
+function _profileComplete() {
+  return !!(State.profile.firstName?.trim() && State.profile.email?.trim());
+}
+
+function openProfileGate(postText, sourceUrl) {
+  _pendingGateText = postText;
+  _pendingGateUrl  = sourceUrl;
+  // Pre-fill fields if the user had partial data already
+  const fn = document.getElementById('pg-firstName');
+  const ln = document.getElementById('pg-lastName');
+  const em = document.getElementById('pg-email');
+  if (fn) fn.value = State.profile.firstName || '';
+  if (ln) ln.value = State.profile.lastName  || '';
+  if (em) em.value = State.profile.email     || '';
+  document.getElementById('pg-err').textContent = '';
+  document.getElementById('pg-cv-status').textContent = '';
+  document.getElementById('pg-cv-status').className = 'pg-cv-status';
+  const gate = document.getElementById('profile-gate');
+  gate.classList.add('open');
+  // Focus first empty required field
+  setTimeout(() => {
+    if (!fn.value) fn.focus();
+    else if (!em.value) em.focus();
+  }, 340);
+}
+
+function closeProfileGate() {
+  document.getElementById('profile-gate').classList.remove('open');
+}
+
+function profileGateSubmit() {
+  const fn  = document.getElementById('pg-firstName').value.trim();
+  const ln  = document.getElementById('pg-lastName').value.trim();
+  const em  = document.getElementById('pg-email').value.trim();
+  const err = document.getElementById('pg-err');
+
+  if (!fn) { err.textContent = 'Please enter your first name.'; document.getElementById('pg-firstName').focus(); return; }
+  if (!em || !em.includes('@')) { err.textContent = 'Please enter a valid email.'; document.getElementById('pg-email').focus(); return; }
+
+  err.textContent = '';
+  // Persist to profile
+  State.profile.firstName = fn;
+  State.profile.lastName  = ln;
+  State.profile.email     = em;
+  State.save();
+  // Update greeting and profile form immediately — no refresh needed
+  document.getElementById('greeting-name').textContent = fn;
+  loadProfileForm();
+  // Track the gate completion
+  if (typeof Auth !== 'undefined') Auth.track('profile_gate_completed', { method: 'manual' });
+
+  closeProfileGate();
+  // Resume the generation that was waiting
+  if (_pendingGateText !== null) {
+    const text = _pendingGateText;
+    const url  = _pendingGateUrl;
+    _pendingGateText = null;
+    _pendingGateUrl  = null;
+    runGenerate(text, url);
+  }
+}
+
+async function profileGateCvChange(file) {
+  if (!file) return;
+  const btn    = document.getElementById('pg-cv-btn');
+  const status = document.getElementById('pg-cv-status');
+  btn.classList.add('loading');
+  btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> Reading CV…`;
+  status.textContent = '';
+  status.className = 'pg-cv-status';
+
+  try {
+    const parsed = await AI.parseCv(file);
+    // Write whatever we got into State.profile
+    const sz = file.size < 1024*1024 ? Math.round(file.size/1024)+' KB' : (file.size/(1024*1024)).toFixed(1)+' MB';
+    const map = {
+      firstName: parsed.firstName, lastName:     parsed.lastName,
+      email:     parsed.email,     phone:        parsed.phone,
+      city:      parsed.city,      country:      parsed.country,
+      nationality: parsed.nationality, currentTitle: parsed.currentTitle,
+      yearsExp:  parsed.yearsExp,  linkedinUrl:  parsed.linkedinUrl,
+      skills:    parsed.skills,    summary:      parsed.summary
+    };
+    Object.entries(map).forEach(([k, v]) => { if (v) State.profile[k] = v; });
+    State.profile.cvName = file.name;
+    State.profile.cvSize = sz;  // fixes "Uploading…" shown after gate CV parse
+    State.save();
+
+    // Check we have the minimum required fields
+    if (!State.profile.firstName?.trim() || !State.profile.email?.trim()) {
+      // Fill what we have into the visible inputs so user can complete manually
+      const fn = document.getElementById('pg-firstName');
+      const ln = document.getElementById('pg-lastName');
+      const em = document.getElementById('pg-email');
+      if (fn && parsed.firstName) fn.value = parsed.firstName;
+      if (ln && parsed.lastName)  ln.value = parsed.lastName;
+      if (em && parsed.email)     em.value = parsed.email;
+      status.textContent = 'CV read — please confirm the fields above.';
+      status.className = 'pg-cv-status ok';
+      btn.classList.remove('loading');
+      btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Upload CV — auto-fill everything`;
+      return;
+    }
+
+    // We have enough — go
+    if (typeof Auth !== 'undefined') Auth.track('profile_gate_completed', { method: 'cv' });
+    status.textContent = `CV parsed ✓ — continuing…`;
+    status.className = 'pg-cv-status ok';
+    setTimeout(() => {
+      closeProfileGate();
+      document.getElementById('greeting-name').textContent = State.profile.firstName;
+      loadProfileForm();  // sync profile tab fields immediately
+      if (_pendingGateText !== null) {
+        const text = _pendingGateText;
+        const url  = _pendingGateUrl;
+        _pendingGateText = null;
+        _pendingGateUrl  = null;
+        runGenerate(text, url);
+      }
+    }, 700);
+
+  } catch (err) {
+    console.error('Profile gate CV parse failed:', err);
+    status.textContent = 'Could not read CV — please fill in manually above.';
+    status.className = 'pg-cv-status err';
+    btn.classList.remove('loading');
+    btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Upload CV — auto-fill everything`;
+  }
+}
+
 // ── SPLASH + ONBOARDING ───────────────────────────────────────────
 let _obIndex = 0;
 const OB_TOTAL = 4;
@@ -1037,6 +1180,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.addEventListener('click', () => { closeAllMenus(); });
   document.getElementById('url-input').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();smartFetch();} });
+
+  // Profile gate: Enter submits, inputs wired
+  ['pg-firstName','pg-lastName','pg-email'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') profileGateSubmit(); });
+  });
   document.getElementById('url-input').addEventListener('input', e => {
     const btn = document.getElementById('fetch-btn');
     const hasVal = e.target.value.trim().length > 0;
