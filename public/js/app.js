@@ -23,7 +23,9 @@ const State = {
     localStorage.setItem('afm_drafts',  JSON.stringify(this.drafts));
     localStorage.setItem('afm_links',   JSON.stringify(this.links));
     localStorage.setItem('afm_stats',   JSON.stringify(this.stats));
-    if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) Auth.syncNow();
+    // Mark cloud data as dirty so session-end push knows a write is needed.
+    // The actual push is debounced via syncNow() or fires on session end.
+    if (typeof Auth !== 'undefined') Auth.markDirty();
   },
 
   addDraft(d)       { this.drafts.unshift(d); this.save(); },
@@ -746,6 +748,7 @@ function saveProfile() {
   State.save();
   const name=State.profile.firstName;
   if(name) document.getElementById('greeting-name').textContent=name;
+  if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) Auth.syncNow();
   toast('Profile saved!');
 }
 

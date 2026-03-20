@@ -56,8 +56,8 @@ function getGuestId() {
 // ── AUTH MODULE ───────────────────────────────────────────────────
 const Auth = (() => {
   let _user         = null;
-  let _syncTimer    = null;
-  let _syncDebounce;
+  let _syncDebounce = null;
+  let _dirty        = false;  // true only when data has changed since last cloud push
 
   // In-memory event buffer — events accumulate here and are flushed
   // once per session (on visibilitychange/pagehide) as a single write.
@@ -82,13 +82,18 @@ const Auth = (() => {
     });
 
     // ── SESSION-END FLUSH ──────────────────────────────────────────
-    // visibilitychange fires reliably on mobile when the app is
-    // backgrounded or the tab is switched. pagehide is the fallback
-    // for desktop page closes. Both write the same buffered events.
+    // Both data and events are flushed when the user leaves — not on
+    // every save(). This keeps writes at 2 per session (1 data push +
+    // 1 events flush) regardless of how many drafts or saves happen.
+    // localStorage stays as the live source of truth during the session.
+    const _sessionEnd = () => {
+      _flushEvents();
+      if (uid()) _pushToCloud();
+    };
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') _flushEvents();
+      if (document.visibilityState === 'hidden') _sessionEnd();
     });
-    window.addEventListener('pagehide', _flushEvents);
+    window.addEventListener('pagehide', _sessionEnd);
   }
 
   // ── LOGIN ─────────────────────────────────────────────────────────
@@ -117,8 +122,10 @@ const Auth = (() => {
   }
 
   async function logout() {
-    // Flush before signing out so the final session events aren't lost
+    // Flush both events and data before signing out so nothing is lost
+    _dirty = true;  // force push even if debounce hasn't fired yet
     await _flushEvents();
+    await _pushToCloud();
     const { authMod, auth } = await ensureFirebase();
     await authMod.signOut(auth);
     toast('Signed out — your local data is still here.');
@@ -150,20 +157,23 @@ const Auth = (() => {
 
     toast(`Welcome${State.profile.firstName ? ', ' + State.profile.firstName : ''}! Synced. ✓`);
 
-    clearInterval(_syncTimer);
-    _syncTimer = setInterval(() => _pushToCloud(), 120_000);
+    // Push once immediately on sign-in so the cloud is up to date with
+    // any local drafts/profile created while the user was a guest.
+    // Subsequent pushes happen via syncNow debounce or session end.
+    _dirty = true;
+    _pushToCloud();
     _trackEvent('sign_in', { method: user.providerData[0]?.providerId || 'unknown' });
   }
 
   function _onSignedOut() {
     _user = null;
-    clearInterval(_syncTimer);
     _updateProfileAuthZone();
   }
 
   // ── CLOUD SYNC ────────────────────────────────────────────────────
   async function _pushToCloud() {
     if (!uid()) return;
+    if (!_dirty) return;  // nothing changed since last push — skip the write
     try {
       const { db, dbMod } = await ensureFirebase();
       const { doc, setDoc, serverTimestamp } = dbMod;
@@ -185,6 +195,7 @@ const Auth = (() => {
           createdAt:    ts,
         }, { merge: true }),
       ]);
+      _dirty = false;  // reset after successful push
     } catch(e) { console.warn('[Fursa] cloud push failed:', e.message); }
   }
 
@@ -223,11 +234,20 @@ const Auth = (() => {
     } catch(e) { console.warn('[Fursa] cloud pull failed:', e.message); }
   }
 
+  // syncNow marks data as dirty and schedules a debounced push after 10s.
+  // This means rapid mutations (generate draft, edit, copy) collapse into
+  // one write. If the tab is closed before 10s fires, the session-end
+  // handler catches it. _dirty prevents writes when nothing changed.
   function syncNow() {
     if (!uid()) return;
+    _dirty = true;
     clearTimeout(_syncDebounce);
-    _syncDebounce = setTimeout(() => _pushToCloud(), 2500);
+    _syncDebounce = setTimeout(() => _pushToCloud(), 10_000);
   }
+
+  // markDirty is called by State.save() so the session-end handler knows
+  // whether a push is needed — without scheduling a debounce itself.
+  function markDirty() { _dirty = true; }
 
   // ── EVENT TRACKING ────────────────────────────────────────────────
   // Events are buffered in memory — zero Firestore writes during the
@@ -254,37 +274,35 @@ const Auth = (() => {
 
     try {
       const { db, dbMod } = await ensureFirebase();
-      const { doc, setDoc, addDoc, collection, arrayUnion } = dbMod;
+      const { doc, setDoc, arrayUnion } = dbMod;
 
-      // ── 1. Daily analytics doc (existing behaviour) ───────────────
-      let analyticPath;
       if (uid()) {
-        analyticPath = `users/${uid()}/analytics/${today}`;
+        // Logged-in: ONE session doc per day under users/{uid}/events/{date}.
+        // arrayUnion handles multiple flushes on the same day safely (e.g.
+        // user backgrounds and re-opens the app twice in one day).
+        // Cost: 1 Firestore write per session — not 1 per event.
+        await setDoc(
+          doc(db, `users/${uid()}/events/${today}`),
+          {
+            events:    arrayUnion(...events),
+            createdAt: events[0].ts,  // admin sorts by createdAt
+            uid:       uid(),
+            updatedAt: Date.now(),
+          },
+          { merge: true }
+        );
       } else {
-        analyticPath = `analytics/${getGuestId()}/days/${today}`;
-      }
-      await setDoc(
-        doc(db, analyticPath),
-        {
-          events:    arrayUnion(...events),
-          guestId:   uid() ? null : getGuestId(),
-          uid:       uid() || null,
-          updatedAt: Date.now(),
-        },
-        { merge: true }
-      );
-
-      // ── 2. Per-event documents in users/{uid}/events ──────────────
-      // This is the subcollection the admin panel queries. Only write
-      // for logged-in users (guests are covered by the analytics path).
-      if (uid()) {
-        await Promise.all(events.map(ev =>
-          addDoc(collection(db, `users/${uid()}/events`), {
-            ...ev,
-            createdAt: ev.ts,  // admin sorts by createdAt
-            uid: uid(),
-          })
-        ));
+        // Guest: one session doc per day under analytics/{guestId}/days/{date}.
+        await setDoc(
+          doc(db, `analytics/${getGuestId()}/days/${today}`),
+          {
+            events:    arrayUnion(...events),
+            guestId:   getGuestId(),
+            uid:       null,
+            updatedAt: Date.now(),
+          },
+          { merge: true }
+        );
       }
 
     } catch(e) {
@@ -301,11 +319,8 @@ const Auth = (() => {
   // ── SOFT LOGIN NUDGE FLOW ─────────────────────────────────────────
   function onDraftGenerated(draft) {
     const count = State.drafts.length;
-    // Track for ALL users — guests and logged-in alike
     _trackEvent('draft_generated', { company: draft.company, jobTitle: draft.jobTitle });
 
-    // CV nudge — shown to everyone (guest or logged-in) who generated without a CV.
-    // Only fires on the first draft so it's not repetitive.
     if (!State.profile.cvName && count === 1) {
       setTimeout(() => {
         _showNudgeBanner(
@@ -313,7 +328,7 @@ const Auth = (() => {
           'Upload CV →',
           () => { switchTab('settings'); }
         );
-      }, 1200); // small delay so draft card renders first
+      }, 1200);
       return;
     }
 
@@ -327,7 +342,8 @@ const Auth = (() => {
 
   function onEmailSent(draft) {
     _trackEvent('email_sent', { company: draft?.company, toEmail: draft?.toEmail });
-    if (isLoggedIn()) syncNow();
+    // Push immediately — most critical action. User may close app right after.
+    if (isLoggedIn()) { _dirty = true; _pushToCloud(); }
   }
 
   function onJobSaved() {
@@ -469,7 +485,7 @@ const Auth = (() => {
 
   return {
     init, loginWithGoogle, loginWithApple, logout,
-    currentUser, uid, isLoggedIn, syncNow, track,
+    currentUser, uid, isLoggedIn, syncNow, markDirty, track,
     onDraftGenerated, onEmailSent, onJobSaved, onCvUploaded, onShareReceived,
     showLoginModal, _closeLoginModal,
   };
