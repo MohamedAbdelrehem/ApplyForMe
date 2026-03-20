@@ -236,6 +236,7 @@ function saveDraftPost(id) {
     email:    d.toEmail   || '',
     savedAt:  new Date().toISOString()
   });
+  if (typeof Auth !== 'undefined') Auth.onJobSaved();
   toast('Post saved to Saved tab!');
 }
 
@@ -505,6 +506,7 @@ function copyDraft(id) {
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
     toast('Copied to clipboard!');
   }
+  if (typeof Auth !== 'undefined') Auth.track('email_copied', { company: d.company, jobTitle: d.jobTitle });
 }
 
 function toggleCardMenu(id, e) {
@@ -757,6 +759,7 @@ async function handleCv(file) {
   State.profile.cvName=file.name; State.profile.cvSize=sz; State.save();
   showCvDone(file.name,'Extracting text…',true);
   toast('Reading your CV…');
+  if (typeof Auth !== 'undefined') Auth.onCvUploaded(file.name);
   try {
     const parsed = await AI.parseCv(file);
     const map = {
@@ -968,6 +971,7 @@ function obNext() {
 
 function finishOnboarding() {
   localStorage.setItem('fursa_onboarded', '1');
+  if (typeof Auth !== 'undefined') Auth.track('onboarding_completed', {});
   const ob = document.getElementById('onboarding');
   if (!ob) return;
   ob.classList.add('hide');
@@ -1005,6 +1009,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(name) document.getElementById('greeting-name').textContent=name;
   renderCards(); loadProfileForm(); refreshStats();
 
+  // Track app open for all users (guests and logged-in)
+  if (typeof Auth !== 'undefined') Auth.track('app_open', {
+    standalone: window.navigator.standalone === true || window.matchMedia('(display-mode:standalone)').matches,
+    platform:   /iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : /android/i.test(navigator.userAgent) ? 'android' : 'desktop',
+  });
+
   showSplash();
   showOnboardingIfNeeded();
 
@@ -1014,6 +1024,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     history.replaceState({}, '', '/'); // clean the URL
     const input = document.getElementById('url-input');
     input.value = sharedParam;
+    if (typeof Auth !== 'undefined') Auth.onShareReceived();
     // Small delay so app finishes rendering before fetch starts
     setTimeout(() => fetchPost(), 400);
   }

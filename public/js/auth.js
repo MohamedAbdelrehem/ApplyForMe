@@ -6,8 +6,6 @@
 'use strict';
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────
-// Replace these with your project values from:
-// Firebase Console → Project Settings → Your apps → Web app → Config
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyDRSVpRy0g4hLFkDTcs2WXq1hp3VgXuZLM",
   authDomain:        "fursa-apply.firebaseapp.com",
@@ -39,11 +37,33 @@ async function ensureFirebase() {
   return _fbReady;
 }
 
+// ── GUEST ID ──────────────────────────────────────────────────────
+// One persistent anonymous ID per device, generated once and never
+// rotated. Used as the Firestore path for guest analytics.
+// When a guest logs in, we include guestId in the first sync so the
+// server can link the pre-login session to the new account if needed.
+function getGuestId() {
+  let gid = localStorage.getItem('fursa_gid');
+  if (!gid) {
+    gid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).slice(2);
+    localStorage.setItem('fursa_gid', gid);
+  }
+  return gid;
+}
+
 // ── AUTH MODULE ───────────────────────────────────────────────────
 const Auth = (() => {
-  let _user      = null;
-  let _syncTimer = null;
+  let _user         = null;
+  let _syncTimer    = null;
   let _syncDebounce;
+
+  // In-memory event buffer — events accumulate here and are flushed
+  // once per session (on visibilitychange/pagehide) as a single write.
+  // Cost: 1 Firestore write per session regardless of event count.
+  const _eventBuffer = [];
+  let   _flushScheduled = false;
 
   function currentUser() { return _user; }
   function uid()         { return _user?.uid || null; }
@@ -51,12 +71,24 @@ const Auth = (() => {
 
   // ── INIT ─────────────────────────────────────────────────────────
   async function init() {
+    // Ensure guest ID is created on every page load (even before login)
+    getGuestId();
+
     const { authMod, auth } = await ensureFirebase();
     authMod.onAuthStateChanged(auth, user => {
       _user = user;
       if (user) _onSignedIn(user);
       else       _onSignedOut();
     });
+
+    // ── SESSION-END FLUSH ──────────────────────────────────────────
+    // visibilitychange fires reliably on mobile when the app is
+    // backgrounded or the tab is switched. pagehide is the fallback
+    // for desktop page closes. Both write the same buffered events.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') _flushEvents();
+    });
+    window.addEventListener('pagehide', _flushEvents);
   }
 
   // ── LOGIN ─────────────────────────────────────────────────────────
@@ -85,6 +117,8 @@ const Auth = (() => {
   }
 
   async function logout() {
+    // Flush before signing out so the final session events aren't lost
+    await _flushEvents();
     const { authMod, auth } = await ensureFirebase();
     await authMod.signOut(auth);
     toast('Signed out — your local data is still here.');
@@ -94,7 +128,7 @@ const Auth = (() => {
   async function _onSignedIn(user) {
     if (user.displayName && !State.profile.firstName) {
       const parts = user.displayName.split(' ');
-      State.profile.firstName = parts[0]           || '';
+      State.profile.firstName = parts[0]                || '';
       State.profile.lastName  = parts.slice(1).join(' ') || '';
     }
     if (user.email && !State.profile.email) State.profile.email = user.email;
@@ -148,7 +182,7 @@ const Auth = (() => {
           draftCount:   State.drafts.length,
           sentCount:    State.stats.sent || 0,
           lastActiveAt: ts,
-          createdAt:    ts, // setDoc merge won't overwrite existing createdAt
+          createdAt:    ts,
         }, { merge: true }),
       ]);
     } catch(e) { console.warn('[Fursa] cloud push failed:', e.message); }
@@ -189,22 +223,70 @@ const Auth = (() => {
   }
 
   // ── EVENT TRACKING ────────────────────────────────────────────────
-  async function _trackEvent(type, meta = {}) {
-    if (!uid()) return;
-    try {
-      const { db, dbMod } = await ensureFirebase();
-      await dbMod.addDoc(dbMod.collection(db, `users/${uid()}/events`), {
-        type, ...meta, createdAt: dbMod.serverTimestamp()
-      });
-    } catch(_) {}
+  // Events are buffered in memory — zero Firestore writes during the
+  // session. _flushEvents() writes the entire buffer as ONE document
+  // when the user leaves. This works for both guests and logged-in users.
+
+  function _trackEvent(type, meta = {}) {
+    // Always track — guests use guestId, logged-in use uid
+    _eventBuffer.push({
+      type,
+      ...meta,
+      ts: Date.now(),  // client timestamp — serverTimestamp not available at flush time
+    });
   }
 
+  async function _flushEvents() {
+    if (_eventBuffer.length === 0) return;
+
+    // Drain the buffer immediately so a double-fire (visibilitychange
+    // then pagehide) doesn't write the same events twice.
+    const events = _eventBuffer.splice(0);
+
+    const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+
+    try {
+      const { db, dbMod } = await ensureFirebase();
+      const { doc, setDoc, arrayUnion } = dbMod;
+
+      let docPath;
+      if (uid()) {
+        // Logged-in: store under their user doc
+        docPath = `users/${uid()}/analytics/${today}`;
+      } else {
+        // Guest: store under anonymous analytics collection
+        docPath = `analytics/${getGuestId()}/days/${today}`;
+      }
+
+      // arrayUnion merges into an existing day doc if the user had
+      // multiple sessions today (e.g. reopened app twice in one day).
+      await setDoc(
+        doc(db, docPath),
+        {
+          events:    arrayUnion(...events),
+          guestId:   uid() ? null : getGuestId(),
+          uid:       uid() || null,
+          updatedAt: Date.now(),
+        },
+        { merge: true }
+      );
+    } catch(e) {
+      // Restore events to buffer so they're not silently lost
+      // (they'll be retried on the next flush attempt)
+      _eventBuffer.unshift(...events);
+      console.warn('[Fursa] analytics flush failed:', e.message);
+    }
+  }
+
+  // Public alias used in app.js
   function track(type, meta) { _trackEvent(type, meta); }
 
   // ── SOFT LOGIN NUDGE FLOW ─────────────────────────────────────────
   function onDraftGenerated(draft) {
     const count = State.drafts.length;
-    if (isLoggedIn()) { syncNow(); track('draft_generated', { company: draft.company, jobTitle: draft.jobTitle }); return; }
+    // Track for ALL users — guests and logged-in alike
+    _trackEvent('draft_generated', { company: draft.company, jobTitle: draft.jobTitle });
+    if (isLoggedIn()) { syncNow(); return; }
     if (count === 1) {
       _showNudgeBanner('✓ Draft ready — sign in free to save it across all your devices', 'Save free →', () => showLoginModal('first_draft'));
     } else {
@@ -213,13 +295,23 @@ const Auth = (() => {
   }
 
   function onEmailSent(draft) {
-    if (!isLoggedIn()) return;
-    track('email_sent', { company: draft?.company, toEmail: draft?.toEmail });
-    syncNow();
+    _trackEvent('email_sent', { company: draft?.company, toEmail: draft?.toEmail });
+    if (isLoggedIn()) syncNow();
   }
-  function onJobSaved()          { if (isLoggedIn()) { track('job_saved',      {}); syncNow(); } }
-  function onCvUploaded(name)    { if (isLoggedIn()) { track('cv_uploaded',    { fileName: name }); syncNow(); } }
-  function onShareReceived()     { if (isLoggedIn()) { track('share_received', {}); } }
+
+  function onJobSaved() {
+    _trackEvent('job_saved', {});
+    if (isLoggedIn()) syncNow();
+  }
+
+  function onCvUploaded(name) {
+    _trackEvent('cv_uploaded', { fileName: name });
+    if (isLoggedIn()) syncNow();
+  }
+
+  function onShareReceived() {
+    _trackEvent('share_received', {});
+  }
 
   // ── NUDGE BANNER ──────────────────────────────────────────────────
   function _showNudgeBanner(text, cta, action) {
