@@ -959,6 +959,33 @@ function openProfileGate(postText, sourceUrl) {
 
 function closeProfileGate() {
   document.getElementById('profile-gate').classList.remove('open');
+  // Reset confirm state for next open
+  _profileGateConfirmMode(false);
+}
+
+function _profileGateConfirmMode(on) {
+  document.getElementById('pg-main-content').style.display = on ? 'none' : '';
+  document.getElementById('pg-confirm-content').style.display = on ? '' : 'none';
+}
+
+function profileGateDismiss() {
+  // Show inline confirm — swap form for the confirm message
+  _profileGateConfirmMode(true);
+}
+
+function profileGateDismissConfirm() {
+  // User confirmed cancel — clear the input and pending state completely
+  const input = document.getElementById('url-input');
+  if (input) input.value = '';
+  _pendingGateText = null;
+  _pendingGateUrl  = null;
+  if (typeof Auth !== 'undefined') Auth.track('profile_gate_dismissed', {});
+  closeProfileGate();
+}
+
+function profileGateDismissCancel() {
+  // User changed their mind — go back to the form
+  _profileGateConfirmMode(false);
 }
 
 function profileGateSubmit() {

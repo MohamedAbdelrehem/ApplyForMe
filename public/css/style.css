@@ -1074,3 +1074,37 @@ textarea.fi { resize:none; line-height:1.5; }
   text-align: center; margin-top: 14px;
   line-height: 1.5;
 }
+
+.pg-close {
+  position: absolute; top: 18px; right: 18px;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--s1); border: none; border-radius: 50%;
+  color: var(--t3); cursor: pointer;
+  transition: background .15s, color .15s;
+  -webkit-appearance: none;
+}
+.pg-close:active { background: var(--s2); color: var(--t1); }
+
+/* Sheet needs position:relative for the absolute X button */
+#profile-gate-sheet { position: relative; }
+
+
+
+.pg-confirm-hint {
+  font-size: 13px; color: var(--t2);
+  background: var(--acc-bg, rgba(200,75,47,.07));
+  border: 1px solid var(--acc-bd, rgba(200,75,47,.18));
+  border-radius: 10px;
+  padding: 12px 14px; line-height: 1.55;
+  margin-bottom: 18px; text-align: center;
+}
+
+.pg-confirm-cancel-btn {
+  width: 100%; background: none; border: none;
+  color: var(--t3); font-size: 13px;
+  padding: 10px; cursor: pointer;
+  font-family: var(--fd); text-align: center;
+  margin-top: 2px;
+}
+.pg-confirm-cancel-btn:active { opacity: .6; }

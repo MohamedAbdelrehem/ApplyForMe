@@ -393,38 +393,60 @@
     <div class="sheet" id="profile-gate-sheet">
       <div class="sh-handle"></div>
 
-      <div class="pg-head">
-        <div class="pg-emoji">✍️</div>
-        <div class="sh-title" style="margin-bottom:4px">One quick step</div>
-        <div class="sh-sub">Fursa uses your name and email to write the application — it takes 10 seconds.</div>
-      </div>
-
-      <!-- Manual fields -->
-      <div class="pg-fields" id="pg-fields">
-        <div class="pg-field-row">
-          <input id="pg-firstName" class="fi pg-fi" type="text"  inputmode="text"  placeholder="First name *" autocomplete="given-name"  autocorrect="off"/>
-          <input id="pg-lastName"  class="fi pg-fi" type="text"  inputmode="text"  placeholder="Last name"    autocomplete="family-name" autocorrect="off"/>
-        </div>
-        <input   id="pg-email"     class="fi pg-fi" type="email" inputmode="email" placeholder="Your email *" autocomplete="email"       autocorrect="off" style="margin-top:10px"/>
-        <div id="pg-err" class="pg-err"></div>
-      </div>
-
-      <button class="sh-cta" id="pg-submit-btn" onclick="profileGateSubmit()">Continue →</button>
-
-      <!-- Divider -->
-      <div class="pg-divider"><span>or fill automatically</span></div>
-
-      <!-- CV upload path -->
-      <div id="pg-cv-area">
-        <input type="file" id="pg-cv-file" accept=".pdf,.docx,.doc,.txt" style="display:none" onchange="profileGateCvChange(this.files[0])"/>
-        <button class="pg-cv-btn" id="pg-cv-btn" onclick="document.getElementById('pg-cv-file').click()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Upload CV — auto-fill everything
+      <!-- ── MAIN FORM CONTENT ── -->
+      <div id="pg-main-content">
+        <!-- X only visible on form — hidden automatically when confirm panel shows -->
+        <button class="pg-close" onclick="profileGateDismiss()" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
-        <div id="pg-cv-status" class="pg-cv-status"></div>
+        <div class="pg-head">
+          <div class="pg-emoji">✍️</div>
+          <div class="sh-title" style="margin-bottom:4px">One quick step</div>
+          <div class="sh-sub">Fursa uses your name and email to write the application — it takes 10 seconds.</div>
+        </div>
+
+        <!-- Manual fields -->
+        <div class="pg-fields" id="pg-fields">
+          <div class="pg-field-row">
+            <input id="pg-firstName" class="fi pg-fi" type="text"  inputmode="text"  placeholder="First name *" autocomplete="given-name"  autocorrect="off"/>
+            <input id="pg-lastName"  class="fi pg-fi" type="text"  inputmode="text"  placeholder="Last name"    autocomplete="family-name" autocorrect="off"/>
+          </div>
+          <input   id="pg-email"     class="fi pg-fi" type="email" inputmode="email" placeholder="Your email *" autocomplete="email"       autocorrect="off" style="margin-top:10px"/>
+          <div id="pg-err" class="pg-err"></div>
+        </div>
+
+        <button class="sh-cta" id="pg-submit-btn" onclick="profileGateSubmit()">Continue →</button>
+
+        <!-- Divider -->
+        <div class="pg-divider"><span>or fill automatically</span></div>
+
+        <!-- CV upload path -->
+        <div id="pg-cv-area">
+          <input type="file" id="pg-cv-file" accept=".pdf,.docx,.doc,.txt" style="display:none" onchange="profileGateCvChange(this.files[0])"/>
+          <button class="pg-cv-btn" id="pg-cv-btn" onclick="document.getElementById('pg-cv-file').click()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Upload CV — auto-fill everything
+          </button>
+          <div id="pg-cv-status" class="pg-cv-status"></div>
+        </div>
+
+        <div class="pg-note">Used only to personalise your emails. Never shared.</div>
       </div>
 
-      <div class="pg-note">Used only to personalise your emails. Never shared.</div>
+      <!-- ── CONFIRM CANCEL PANEL ── -->
+      <div id="pg-confirm-content" style="display:none">
+        <div class="pg-head">
+          <div class="pg-emoji">🤔</div>
+          <div class="sh-title" style="margin-bottom:4px">Skip for now?</div>
+          <div class="sh-sub">Without your details, Fursa can't write a personalised email. The generation will be cancelled.</div>
+        </div>
+        <div class="pg-confirm-hint">
+          It only takes 10 seconds — and every application after this one is instant. 💪
+        </div>
+        <button class="sh-cta" onclick="profileGateDismissCancel()">Keep filling in →</button>
+        <button class="pg-confirm-cancel-btn" onclick="profileGateDismissConfirm()">Yes, skip for now</button>
+      </div>
+
     </div>
   </div>
 
