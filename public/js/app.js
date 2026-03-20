@@ -1217,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = document.getElementById('fetch-btn');
     const hasVal = e.target.value.trim().length > 0;
     btn.innerHTML = hasVal
-      ? 'Fetch →'
+      ? 'Generate →'
       : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Paste &amp; Fetch';
   });
   document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('overlay')) closeSched(); });
