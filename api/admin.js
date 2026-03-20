@@ -5,6 +5,27 @@
 //   FIREBASE_PROJECT_ID — e.g. fursa-apply
 //   FIREBASE_CLIENT_EMAIL — from service account JSON
 //   FIREBASE_PRIVATE_KEY  — from service account JSON (include the \n newlines)
+//
+// ── FIRESTORE SECURITY RULES REQUIRED ────────────────────────────────────────
+// Add these rules to your Firestore console to lock down the guests collection.
+// Guests write their own data (by guestId stored in localStorage), no one reads it
+// client-side — only the Admin SDK (this file) reads it server-side.
+//
+// rules_version = '2';
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//     match /users/{uid}/{document=**} {
+//       allow read, write: if request.auth != null && request.auth.uid == uid;
+//     }
+//     match /guests/{gid}/{document=**} {
+//       // Guests can write their own doc by matching their localStorage guestId.
+//       // No client-side reads — admin reads via SDK which bypasses these rules.
+//       allow write: if true;   // guestId is a UUID — unguessable by others
+//       allow read:  if false;  // only Admin SDK reads guest data
+//     }
+//   }
+// }
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore }                  from 'firebase-admin/firestore';
@@ -60,35 +81,81 @@ export default async function handler(req, res) {
         users.push({ uid, ...u, _p: profile, _d: data });
       }));
 
-      // Sort by lastActiveAt desc
       users.sort((a, b) => {
         const ta = a.lastActiveAt?._seconds || 0;
         const tb = b.lastActiveAt?._seconds || 0;
         return tb - ta;
       });
 
-      // Serialize Firestore Timestamps to ms
       return res.status(200).json({ users: users.map(u => serializeUser(u)) });
     }
 
     // ── GET /api/admin?action=events ──────────────────────────────
+    // Events are stored as day docs: users/{uid}/events/{YYYY-MM-DD}
+    // Each doc has an events[] array. We unpack them into a flat list.
     if (action === 'events') {
-      // Fetch recent users first (max 30) then pull their events
-      const snap  = await db.collection('users').orderBy('lastActiveAt', 'desc').limit(30).get();
-      const events = [];
+      // No orderBy — sort in JS to avoid requiring a Firestore index.
+      const snap = await db.collection('users').limit(50).get();
+      const flat = [];
 
       await Promise.all(snap.docs.map(async docSnap => {
         const uid  = docSnap.id;
         const user = serializeUser({ uid, ...docSnap.data() });
         try {
-          const evSnap = await db.collection(`users/${uid}/events`)
-            .orderBy('createdAt', 'desc').limit(5).get();
-          evSnap.forEach(d => events.push({ ...serializeDoc(d.data()), _uid: uid, _user: user }));
+          // Each doc is one day; get the 7 most recent days
+          const evSnap = await db.collection(`users/${uid}/events`).limit(7).get();
+          evSnap.forEach(dayDoc => {
+            const dayData = serializeDoc(dayDoc.data());
+            const evArr   = Array.isArray(dayData.events) ? dayData.events : [];
+            evArr.forEach(ev => flat.push({ ...ev, _uid: uid, _user: user }));
+          });
         } catch (_) {}
       }));
 
-      events.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      return res.status(200).json({ events: events.slice(0, 50) });
+      flat.sort((a, b) => (b.ts || b.createdAt || 0) - (a.ts || a.createdAt || 0));
+      return res.status(200).json({ events: flat.slice(0, 100) });
+    }
+
+    // ── GET /api/admin?action=guests ──────────────────────────────
+    // Guest data now lives under guests/{gid}/* — same structure as users.
+    // Root doc has summary fields; profile/main and data/main have full data.
+    if (action === 'guests') {
+      // No orderBy here — it requires a Firestore index that may not exist.
+      // We sort in JS below instead, same pattern as the users action.
+      const snap = await db.collection('guests').limit(200).get();
+      const guests = [];
+
+      await Promise.all(snap.docs.map(async docSnap => {
+        const gid  = docSnap.id;
+        const root = docSnap.data();
+        let profile = {}, data = {}, eventCount = 0, eventTypes = {};
+
+        try {
+          const [pSnap, dSnap, evSnap] = await Promise.all([
+            db.doc(`guests/${gid}/profile/main`).get(),
+            db.doc(`guests/${gid}/data/main`).get(),
+            db.collection(`guests/${gid}/events`).limit(7).get(),
+          ]);
+          if (pSnap.exists) profile = pSnap.data() || {};
+          if (dSnap.exists) data    = dSnap.data() || {};
+          evSnap.forEach(dayDoc => {
+            const evs = Array.isArray(dayDoc.data().events) ? dayDoc.data().events : [];
+            eventCount += evs.length;
+            evs.forEach(ev => { eventTypes[ev.type] = (eventTypes[ev.type]||0) + 1; });
+          });
+        } catch(_) {}
+
+        guests.push(serializeUser({
+          gid, ...root,
+          _p: profile,
+          _d: data,
+          eventCount,
+          eventTypes,
+        }));
+      }));
+
+      guests.sort((a,b) => (b.lastActiveAt||0) - (a.lastActiveAt||0));
+      return res.status(200).json({ guests });
     }
 
     return res.status(400).json({ error: 'Unknown action' });

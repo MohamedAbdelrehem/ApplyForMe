@@ -63,7 +63,6 @@ const Auth = (() => {
   // once per session (on visibilitychange/pagehide) as a single write.
   // Cost: 1 Firestore write per session regardless of event count.
   const _eventBuffer = [];
-  let   _flushScheduled = false;
 
   function currentUser() { return _user; }
   function uid()         { return _user?.uid || null; }
@@ -74,6 +73,15 @@ const Auth = (() => {
     // Ensure guest ID is created on every page load (even before login)
     getGuestId();
 
+    // If the guest already has data in localStorage (returning visitor),
+    // mark dirty immediately so the session-end flush will push it.
+    // This covers the race where State.save() was called before Auth.init()
+    // ran (e.g. during State.load()), meaning markDirty() was a no-op.
+    const hasExistingData = State.drafts.length > 0 ||
+                            !!(State.profile.firstName) ||
+                            !!(State.profile.email);
+    if (hasExistingData) _dirty = true;
+
     const { authMod, auth } = await ensureFirebase();
     authMod.onAuthStateChanged(auth, user => {
       _user = user;
@@ -82,13 +90,13 @@ const Auth = (() => {
     });
 
     // ── SESSION-END FLUSH ──────────────────────────────────────────
-    // Both data and events are flushed when the user leaves — not on
-    // every save(). This keeps writes at 2 per session (1 data push +
-    // 1 events flush) regardless of how many drafts or saves happen.
+    // Flush both events and data on session end — not on every save.
+    // Logged-in users push to users/{uid}/*, guests push to guests/{gid}/*.
     // localStorage stays as the live source of truth during the session.
     const _sessionEnd = () => {
       _flushEvents();
       if (uid()) _pushToCloud();
+      else       _pushGuestToCloud();
     };
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') _sessionEnd();
@@ -128,6 +136,10 @@ const Auth = (() => {
     await _pushToCloud();
     const { authMod, auth } = await ensureFirebase();
     await authMod.signOut(auth);
+    // Rotate guestId after sign-out so the next guest session is fresh
+    // and doesn't accidentally merge with a previous guest session.
+    // Must happen after signOut so onAuthStateChanged (_onSignedOut) runs first.
+    localStorage.removeItem('fursa_gid');
     toast('Signed out — your local data is still here.');
   }
 
@@ -146,6 +158,10 @@ const Auth = (() => {
     _closeLoginModal();
     _removeNudgeBanner();
 
+    // Migrate any guest data saved before sign-in, then pull from cloud.
+    // Order matters: migrate first so guest drafts aren't lost if cloud
+    // already has data (pull merges by id, so no duplicates).
+    await _migrateGuestToUser(user.uid);
     await _pullFromCloud();
 
     _updateProfileAuthZone();
@@ -185,6 +201,10 @@ const Auth = (() => {
           links:  State.links.slice(0, 500),
           stats:  State.stats, updatedAt: ts
         }, { merge: true }),
+        // createdAt uses merge:true but we never overwrite it if it already
+        // exists — Firestore merge only sets missing fields when the doc exists.
+        // We achieve this by writing it only as part of the initial setDoc;
+        // subsequent pushes still include it but merge:true won't overwrite.
         setDoc(doc(db, `users/${uid()}`), {
           email:        State.profile.authEmail || '',
           displayName:  [State.profile.firstName, State.profile.lastName].filter(Boolean).join(' '),
@@ -192,6 +212,8 @@ const Auth = (() => {
           draftCount:   State.drafts.filter(d => d.status !== 'sent').length,
           sentCount:    State.stats.sent || 0,
           lastActiveAt: ts,
+          // createdAt is set once — subsequent merges won't overwrite an
+          // existing field when using merge:true, so this is safe to include.
           createdAt:    ts,
         }, { merge: true }),
       ]);
@@ -234,15 +256,140 @@ const Auth = (() => {
     } catch(e) { console.warn('[Fursa] cloud pull failed:', e.message); }
   }
 
+  // ── GUEST CLOUD SYNC ──────────────────────────────────────────────
+  // Saves guest profile + data to guests/{gid}/* so their work is
+  // preserved across sessions and visible in the admin panel.
+  // Only writes if something actually changed (_dirty flag).
+  async function _pushGuestToCloud() {
+    if (uid()) return;   // should not be called for logged-in users
+    if (!_dirty) return;
+
+    // Don't waste a write on a pure lurker who opened the app and left
+    // without doing anything. Only persist if they have at least one draft
+    // OR filled in their name/email in the profile gate.
+    const hasData = State.drafts.length > 0 ||
+                    !!(State.profile.firstName) ||
+                    !!(State.profile.email);
+    if (!hasData) { _dirty = false; return; }
+
+    const gid = getGuestId();
+    try {
+      const { db, dbMod } = await ensureFirebase();
+      const { doc, setDoc, serverTimestamp } = dbMod;
+      const ts  = serverTimestamp();
+      const now = Date.now();
+      const platform = /iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios'
+                     : /android/i.test(navigator.userAgent)          ? 'android' : 'desktop';
+      await Promise.all([
+        // Root doc — lightweight summary for admin list view
+        setDoc(doc(db, `guests/${gid}`), {
+          platform,
+          standalone:   window.navigator.standalone === true ||
+                        window.matchMedia('(display-mode:standalone)').matches,
+          draftCount:   State.drafts.filter(d => d.status !== 'sent').length,
+          sentCount:    State.stats.sent || 0,
+          hasCV:        !!(State.profile.cvName),
+          hasName:      !!(State.profile.firstName),
+          lastActiveAt: ts,
+          createdAt:    ts,  // merge:true won't overwrite on subsequent pushes
+        }, { merge: true }),
+        // Profile — name, email, CV fields from profile gate / CV upload
+        setDoc(doc(db, `guests/${gid}/profile/main`), {
+          ...State.profile,
+          updatedAt: ts,
+        }, { merge: true }),
+        // Data — drafts, links, stats
+        setDoc(doc(db, `guests/${gid}/data/main`), {
+          drafts:    State.drafts.slice(0, 200),
+          links:     State.links.slice(0, 500),
+          stats:     State.stats,
+          updatedAt: ts,
+        }, { merge: true }),
+      ]);
+      _dirty = false;
+    } catch(e) { console.warn('[Fursa] guest push failed:', e.message); }
+  }
+
+  // ── GUEST → USER MIGRATION ────────────────────────────────────────
+  // Called once when a guest signs in. Reads their guest Firestore docs,
+  // merges the data into State (local), then deletes the guest docs.
+  // The subsequent _pushToCloud() writes everything to users/{uid}/*.
+  async function _migrateGuestToUser(newUid) {
+    const gid = getGuestId();
+    try {
+      const { db, dbMod } = await ensureFirebase();
+      const { doc, getDoc, deleteDoc } = dbMod;
+
+      const [pSnap, dSnap] = await Promise.all([
+        getDoc(doc(db, `guests/${gid}/profile/main`)),
+        getDoc(doc(db, `guests/${gid}/data/main`)),
+      ]);
+
+      let migrated = false;
+
+      // Merge guest profile into State — local data wins for auth fields,
+      // guest cloud data fills any gaps (e.g. CV fields from a previous session)
+      if (pSnap.exists()) {
+        const guestProfile = pSnap.data();
+        const SKIP = new Set(['authUid','authEmail','photoUrl','updatedAt']);
+        Object.entries(guestProfile).forEach(([k, v]) => {
+          if (SKIP.has(k)) return;
+          if (v !== undefined && v !== null && v !== '' && !State.profile[k]) {
+            State.profile[k] = v;
+          }
+        });
+        migrated = true;
+      }
+
+      // Merge guest drafts and links — dedup by id
+      if (dSnap.exists()) {
+        const gd = dSnap.data();
+        if (Array.isArray(gd.drafts) && gd.drafts.length) {
+          const ids = new Set(State.drafts.map(d => d.id));
+          gd.drafts.forEach(d => { if (!ids.has(d.id)) State.drafts.push(d); });
+          migrated = true;
+        }
+        if (Array.isArray(gd.links) && gd.links.length) {
+          const ids = new Set(State.links.map(l => l.id));
+          gd.links.forEach(l => { if (!ids.has(l.id)) State.links.push(l); });
+          migrated = true;
+        }
+        if ((gd.stats?.sent || 0) > (State.stats.sent || 0)) {
+          State.stats.sent = gd.stats.sent;
+          migrated = true;
+        }
+      }
+
+      if (migrated) {
+        State.save();
+        // Clean up guest docs now that data is in State and will be
+        // pushed to users/{uid}/* by the _pushToCloud() call in _onSignedIn.
+        // Non-fatal — orphaned guest docs are harmless if delete fails.
+        try {
+          const { collection, getDocs } = dbMod;
+          const delTargets = [];
+          if (pSnap.exists()) delTargets.push(deleteDoc(doc(db, `guests/${gid}/profile/main`)));
+          if (dSnap.exists()) delTargets.push(deleteDoc(doc(db, `guests/${gid}/data/main`)));
+          // Delete event day docs
+          const evSnap = await getDocs(collection(db, `guests/${gid}/events`));
+          evSnap.forEach(d => delTargets.push(deleteDoc(d.ref)));
+          // Delete root doc last
+          delTargets.push(deleteDoc(doc(db, `guests/${gid}`)));
+          await Promise.allSettled(delTargets);
+        } catch(_) {}
+        console.info('[Fursa] guest data migrated to user account');
+      }
+    } catch(e) { console.warn('[Fursa] guest migration failed:', e.message); }
+  }
+
   // syncNow marks data as dirty and schedules a debounced push after 10s.
-  // This means rapid mutations (generate draft, edit, copy) collapse into
-  // one write. If the tab is closed before 10s fires, the session-end
-  // handler catches it. _dirty prevents writes when nothing changed.
+  // Works for both logged-in users and guests.
+  // Uses a shorter delay for guests (5s) because iOS pagehide is unreliable —
+  // we can't count on the session-end flush firing when the app is killed.
   function syncNow() {
-    if (!uid()) return;
     _dirty = true;
     clearTimeout(_syncDebounce);
-    _syncDebounce = setTimeout(() => _pushToCloud(), 10_000);
+    _syncDebounce = setTimeout(() => uid() ? _pushToCloud() : _pushGuestToCloud(), uid() ? 10_000 : 5_000);
   }
 
   // markDirty is called by State.save() so the session-end handler knows
@@ -292,13 +439,43 @@ const Auth = (() => {
           { merge: true }
         );
       } else {
-        // Guest: one session doc per day under analytics/{guestId}/days/{date}.
+        // Guest: one session doc per day under guests/{gid}/events/{date}.
+        // Skip if the only event is app_open — not worth a write for a pure lurker
+        // who opened and immediately closed without interacting.
+        const meaningful = events.filter(e => e.type !== 'app_open');
+        const toWrite    = meaningful.length ? events : [];
+        if (!toWrite.length) return;
+
+        const gid      = getGuestId();
+        const platform = /iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios'
+                       : /android/i.test(navigator.userAgent)          ? 'android' : 'desktop';
+
+        // Always upsert the root guest doc so admin queries (which ORDER BY
+        // lastActiveAt on the guests collection) can find this guest even if
+        // _pushGuestToCloud hasn't run yet (e.g. guest interacted but never
+        // created a draft, so the hasData check in _pushGuestToCloud bailed).
         await setDoc(
-          doc(db, `analytics/${getGuestId()}/days/${today}`),
+          doc(db, `guests/${gid}`),
           {
-            events:    arrayUnion(...events),
-            guestId:   getGuestId(),
-            uid:       null,
+            platform,
+            standalone:   window.navigator.standalone === true ||
+                          window.matchMedia('(display-mode:standalone)').matches,
+            draftCount:   State.drafts.filter(d => d.status !== 'sent').length,
+            sentCount:    State.stats.sent || 0,
+            hasCV:        !!(State.profile.cvName),
+            hasName:      !!(State.profile.firstName),
+            lastActiveAt: toWrite[toWrite.length - 1].ts,
+            createdAt:    toWrite[0].ts,
+          },
+          { merge: true }
+        );
+
+        await setDoc(
+          doc(db, `guests/${gid}/events/${today}`),
+          {
+            events:    arrayUnion(...toWrite),
+            createdAt: toWrite[0].ts,
+            guestId:   gid,
             updatedAt: Date.now(),
           },
           { merge: true }
@@ -329,31 +506,38 @@ const Auth = (() => {
           () => { switchTab('settings'); }
         );
       }, 1200);
+      // still sync even if showing CV nudge — draft was created
+      syncNow();
       return;
     }
 
-    if (isLoggedIn()) { syncNow(); return; }
-    if (count === 1) {
-      _showNudgeBanner('✓ Draft ready - sign in free to save it across all your devices', 'Save free →', () => showLoginModal('first_draft'));
-    } else {
-      _showNudgeModal(count);
+    // Sync for both guests and logged-in users
+    syncNow();
+
+    if (!isLoggedIn()) {
+      if (count === 1) {
+        _showNudgeBanner('✓ Draft ready - sign in free to save it across all your devices', 'Save free →', () => showLoginModal('first_draft'));
+      } else {
+        _showNudgeModal(count);
+      }
     }
   }
 
   function onEmailSent(draft) {
     _trackEvent('email_sent', { company: draft?.company, toEmail: draft?.toEmail });
     // Push immediately — most critical action. User may close app right after.
-    if (isLoggedIn()) { _dirty = true; _pushToCloud(); }
+    _dirty = true;
+    if (uid()) _pushToCloud(); else _pushGuestToCloud();
   }
 
   function onJobSaved() {
     _trackEvent('job_saved', {});
-    if (isLoggedIn()) syncNow();
+    syncNow();  // works for both guests and logged-in
   }
 
   function onCvUploaded(name) {
     _trackEvent('cv_uploaded', { fileName: name });
-    if (isLoggedIn()) syncNow();
+    syncNow();  // works for both guests and logged-in
   }
 
   function onShareReceived() {

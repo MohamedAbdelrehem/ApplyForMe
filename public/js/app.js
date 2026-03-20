@@ -748,7 +748,7 @@ function saveProfile() {
   State.save();
   const name=State.profile.firstName;
   if(name) document.getElementById('greeting-name').textContent=name;
-  if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) Auth.syncNow();
+  if (typeof Auth !== 'undefined') Auth.syncNow();
   toast('Profile saved!');
 }
 
@@ -914,8 +914,12 @@ function applyBackupJSON(raw) {
       State.links = [...newLinks, ...State.links];
     }
     if (data.profile && typeof data.profile === 'object') {
+      // Backup wins for all non-auth fields — the whole point of restoring
+      // a backup is to get your data back, not keep stale local values.
+      const SKIP_ON_IMPORT = new Set(['authUid', 'authEmail', 'photoUrl']);
       Object.entries(data.profile).forEach(([k, v]) => {
-        if (v && !State.profile[k]) State.profile[k] = v;
+        if (SKIP_ON_IMPORT.has(k)) return;
+        if (v !== undefined && v !== null && v !== '') State.profile[k] = v;
       });
     }
     if (data.stats?.sent) {
@@ -1226,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hasVal = e.target.value.trim().length > 0;
     btn.innerHTML = hasVal
       ? 'Generate →'
-      : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Paste &amp; Fetch';
+      : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Paste &amp; Generate';
   });
   document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('overlay')) closeSched(); });
   document.getElementById('shortcuts-overlay')?.addEventListener('click',e=>{ if(e.target===document.getElementById('shortcuts-overlay')) closeShortcutsGuide(); });

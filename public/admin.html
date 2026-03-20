@@ -11,6 +11,7 @@
       --t1:#1A1612;--t2:#6B6358;--t3:#A09890;
       --acc:#C84B2F;--acc-bg:rgba(200,75,47,.08);--acc-bd:rgba(200,75,47,.22);
       --grn:#2D7A4F;--grn-bg:rgba(45,122,79,.08);--grn-bd:rgba(45,122,79,.22);
+      --blu:#2563EB;--blu-bg:rgba(37,99,235,.08);
       --bd:rgba(60,50,30,.10);--bd2:rgba(60,50,30,.16);
     }
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;}
@@ -26,95 +27,114 @@
     .gate-btn{width:100%;padding:13px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
     .gate-err{color:var(--acc);font-size:13px;margin-top:8px;}
 
-    /* ── DASHBOARD LAYOUT ── */
+    /* ── DASHBOARD ── */
     #dashboard{display:none;}
     .dash-header{background:#fff;border-bottom:1px solid var(--bd);padding:14px 24px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10;}
     .dash-logo{width:28px;height:28px;border-radius:7px;}
     .dash-title{font-size:15px;font-weight:700;flex:1;}
-    .dash-logout{font-size:12px;color:var(--t3);cursor:pointer;padding:6px 10px;border-radius:6px;}
-    .dash-logout:hover{color:var(--acc);background:var(--acc-bg);}
+    .dash-meta{font-size:11px;color:var(--t3);margin-right:4px;}
+    .dash-btn{font-size:12px;color:var(--t3);cursor:pointer;padding:6px 10px;border-radius:6px;background:none;border:none;font-family:inherit;}
+    .dash-btn:hover{color:var(--acc);background:var(--acc-bg);}
+    .dash-body{max-width:1180px;margin:0 auto;padding:24px 20px;}
 
-    .dash-body{max-width:1080px;margin:0 auto;padding:24px 20px;}
+    /* ── TABS ── */
+    .tab-row{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--bd);}
+    .tab-btn{padding:8px 16px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit;transition:color .15s;}
+    .tab-btn.active{color:var(--acc);border-bottom-color:var(--acc);}
+    .tab-btn:hover:not(.active){color:var(--t2);}
 
-    /* ── DIFF STATS (week-over-week) ── */
+    /* ── STATS ── */
     .section-title{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:28px;}
-    .stat-card{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px 18px;}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:24px;}
+    .stat-card{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px 16px;}
     .stat-label{font-size:11px;color:var(--t3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
-    .stat-value{font-size:26px;font-weight:700;color:var(--t1);line-height:1.1;}
+    .stat-value{font-size:24px;font-weight:700;color:var(--t1);line-height:1.1;}
     .stat-diff{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;margin-top:4px;padding:2px 7px;border-radius:99px;}
     .diff-up  {background:var(--grn-bg);color:var(--grn);}
     .diff-dn  {background:var(--acc-bg);color:var(--acc);}
     .diff-zero{background:var(--s1);color:var(--t3);}
-    .stat-sub{font-size:11px;color:var(--t3);margin-top:2px;}
 
-    /* ── EVENTS FEED ── */
-    .two-col{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;}
-    @media(max-width:800px){.two-col{grid-template-columns:1fr;}}
+    /* ── PANELS ── */
+    .two-col{display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start;}
+    @media(max-width:860px){.two-col{grid-template-columns:1fr;}}
     .panel{background:#fff;border:1px solid var(--bd);border-radius:12px;overflow:hidden;}
-    .panel-hdr{padding:12px 16px;border-bottom:1px solid var(--bd);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;}
+    .panel-hdr{padding:12px 16px;border-bottom:1px solid var(--bd);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
     .panel-hdr span{font-size:11px;color:var(--t3);font-weight:400;}
 
-    /* ── USERS TABLE ── */
+    /* ── FILTERS ── */
     .filter-row{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bd);}
     .filter-inp{flex:1;padding:7px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;background:var(--bg);color:var(--t1);outline:none;font-family:inherit;}
     .filter-inp:focus{border-color:var(--acc);}
-    .icon-btn{padding:7px 12px;background:var(--s1);border:1px solid var(--bd);border-radius:7px;font-size:12px;cursor:pointer;color:var(--t2);font-family:inherit;white-space:nowrap;}
+    .icon-btn{padding:7px 10px;background:var(--s1);border:1px solid var(--bd);border-radius:7px;font-size:12px;cursor:pointer;color:var(--t2);font-family:inherit;white-space:nowrap;}
     .icon-btn:hover{background:var(--s2);}
     .export-btn{padding:7px 12px;background:var(--grn-bg);border:1px solid var(--grn-bd);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--grn);font-family:inherit;}
 
+    /* ── TABLE ── */
     table{width:100%;border-collapse:collapse;font-size:13px;}
     thead{background:var(--s1);}
     th{padding:9px 14px;text-align:left;font-weight:600;font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--bd);white-space:nowrap;}
     td{padding:10px 14px;border-bottom:1px solid var(--bd);vertical-align:middle;}
     tr:last-child td{border-bottom:none;}
     tr:hover td{background:var(--s1);}
-
     .user-cell{display:flex;align-items:center;gap:9px;}
     .u-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--t2);}
     .u-name{font-weight:600;font-size:13px;}
     .u-email{font-size:11px;color:var(--t3);}
     .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;}
-    .pill-grn{background:var(--grn-bg);color:var(--grn);}
+    .pill-grn {background:var(--grn-bg);color:var(--grn);}
     .pill-gray{background:var(--s2);color:var(--t3);}
+    .pill-blu {background:var(--blu-bg);color:var(--blu);}
     .detail-btn{padding:4px 10px;background:var(--s1);border:1px solid var(--bd);border-radius:6px;font-size:12px;cursor:pointer;color:var(--t2);font-family:inherit;}
     .detail-btn:hover{background:var(--s2);}
 
-    /* ── EVENTS FEED PANEL ── */
-    .event-list{max-height:500px;overflow-y:auto;}
-    .event-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bd);}
+    /* ── EVENTS ── */
+    .event-list{max-height:560px;overflow-y:auto;}
+    .event-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bd);align-items:flex-start;}
     .event-item:last-child{border-bottom:none;}
     .ev-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
-    .ev-dot-draft{background:#5B4FCF;}
-    .ev-dot-sent{background:var(--grn);}
-    .ev-dot-save{background:var(--acc);}
-    .ev-dot-cv{background:#A0620A;}
-    .ev-dot-signin{background:#2563EB;}
-    .ev-dot-share{background:#0F766E;}
+    .ev-dot-draft  {background:#5B4FCF;}
+    .ev-dot-sent   {background:var(--grn);}
+    .ev-dot-copy   {background:#BE185D;}
+    .ev-dot-save   {background:var(--acc);}
+    .ev-dot-cv     {background:#A0620A;}
+    .ev-dot-signin {background:#2563EB;}
+    .ev-dot-share  {background:#0F766E;}
+    .ev-dot-open   {background:#D8D4C8;}
+    .ev-dot-gate   {background:#92400E;}
     .ev-type{font-size:12px;font-weight:600;color:var(--t1);}
     .ev-meta{font-size:11px;color:var(--t3);margin-top:1px;}
-    .ev-time{font-size:10px;color:var(--t3);margin-left:auto;white-space:nowrap;padding-top:2px;}
+    .ev-time{font-size:10px;color:var(--t3);margin-left:auto;white-space:nowrap;padding-top:2px;flex-shrink:0;}
 
-    /* ── DETAIL PANEL (slide-in) ── */
-    #detail-panel{position:fixed;right:0;top:0;bottom:0;width:400px;background:#fff;border-left:1px solid var(--bd);overflow-y:auto;z-index:100;transform:translateX(100%);transition:transform .26s ease;}
+    /* ── DETAIL PANEL ── */
+    #detail-panel{position:fixed;right:0;top:0;bottom:0;width:420px;background:#fff;border-left:1px solid var(--bd);overflow-y:auto;z-index:100;transform:translateX(100%);transition:transform .26s ease;}
     #detail-panel.open{transform:none;}
-    .dp-hdr{padding:16px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;}
+    .dp-hdr{padding:16px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;position:sticky;top:0;background:#fff;z-index:1;}
     .dp-close{margin-left:auto;font-size:20px;cursor:pointer;color:var(--t3);line-height:1;padding:4px;background:none;border:none;font-family:inherit;}
     .dp-close:hover{color:var(--t1);}
     .dp-section{padding:14px 18px;border-bottom:1px solid var(--bd);}
-    .dp-stitle{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
-    .kv{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
-    .kv-k{font-size:12px;color:var(--t3);}
-    .kv-v{font-size:12px;font-weight:600;color:var(--t1);max-width:210px;text-align:right;word-break:break-word;}
+    .dp-stitle{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+    .kv{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;gap:12px;}
+    .kv-k{font-size:12px;color:var(--t3);white-space:nowrap;flex-shrink:0;}
+    .kv-v{font-size:12px;font-weight:600;color:var(--t1);text-align:right;word-break:break-word;}
+    .kv-v a{color:var(--blu);text-decoration:none;}
     .draft-item{background:var(--s1);border-radius:8px;padding:9px 11px;margin-bottom:7px;}
     .dr-co{font-size:12px;font-weight:700;}
-    .dr-role{font-size:11px;color:var(--t2);margin-bottom:1px;}
-    .dr-st{font-size:11px;color:var(--t3);}
+    .dr-role{font-size:11px;color:var(--t2);}
+    .dr-st{font-size:11px;color:var(--t3);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+    .dr-badge{padding:1px 6px;border-radius:99px;font-size:10px;font-weight:600;}
+    .dr-badge-draft{background:var(--s2);color:var(--t3);}
+    .dr-badge-sent {background:var(--grn-bg);color:var(--grn);}
+    .dr-badge-sched{background:var(--blu-bg);color:var(--blu);}
+    .link-item{font-size:12px;padding:7px 0;border-bottom:1px solid var(--bd);display:flex;gap:8px;align-items:flex-start;}
+    .link-item:last-child{border-bottom:none;}
+    .link-co{font-weight:600;}
+    .link-url{color:var(--blu);text-decoration:none;font-size:11px;word-break:break-all;}
 
-    /* ── LOADING ── */
+    /* ── MISC ── */
     .loading{text-align:center;padding:40px 20px;color:var(--t3);font-size:13px;}
     .spinner{width:24px;height:24px;border-radius:50%;border:2px solid var(--s2);border-top-color:var(--acc);animation:spin .7s linear infinite;margin:0 auto 10px;}
     @keyframes spin{to{transform:rotate(360deg);}}
+    .empty{text-align:center;padding:32px 20px;color:var(--t3);font-size:13px;}
   </style>
 </head>
 <body>
@@ -136,56 +156,105 @@
   <div class="dash-header">
     <img src="icons/icon-192.png" class="dash-logo" alt=""/>
     <div class="dash-title">Fursa — Admin</div>
-    <span style="font-size:11px;color:var(--t3);margin-right:8px" id="last-refresh"></span>
-    <div class="dash-logout" onclick="sessionStorage.removeItem('fursa_admin_pw');location.reload()">Sign out</div>
+    <span class="dash-meta" id="last-refresh"></span>
+    <button class="dash-btn" onclick="loadAll()">↺ Refresh</button>
+    <button class="dash-btn" onclick="sessionStorage.removeItem('fursa_admin_pw');location.reload()">Sign out</button>
   </div>
 
   <div class="dash-body">
 
-    <!-- Week-over-week diff stats -->
-    <div class="section-title" style="margin-bottom:10px">This week vs last week</div>
-    <div class="stats-grid" id="stats-grid">
-      <div class="stat-card"><div class="stat-label">Total users</div><div class="stat-value" id="st-users">—</div><div id="st-users-diff"></div></div>
+    <div class="section-title">Overview — this week vs last week</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Registered users</div><div class="stat-value" id="st-users">—</div></div>
+      <div class="stat-card"><div class="stat-label">Guest sessions</div><div class="stat-value" id="st-guests">—</div></div>
       <div class="stat-card"><div class="stat-label">New users (7d)</div><div class="stat-value" id="st-new">—</div><div id="st-new-diff"></div></div>
-      <div class="stat-card"><div class="stat-label">Drafts generated (7d)</div><div class="stat-value" id="st-drafts">—</div><div id="st-drafts-diff"></div></div>
+      <div class="stat-card"><div class="stat-label">Total drafts</div><div class="stat-value" id="st-total-drafts">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total sent</div><div class="stat-value" id="st-total-sent">—</div></div>
+      <div class="stat-card"><div class="stat-label">Drafts (7d)</div><div class="stat-value" id="st-drafts">—</div><div id="st-drafts-diff"></div></div>
       <div class="stat-card"><div class="stat-label">Emails sent (7d)</div><div class="stat-value" id="st-sent">—</div><div id="st-sent-diff"></div></div>
+      <div class="stat-card"><div class="stat-label">CV uploads (7d)</div><div class="stat-value" id="st-cvs">—</div><div id="st-cvs-diff"></div></div>
       <div class="stat-card"><div class="stat-label">Sign-ins (7d)</div><div class="stat-value" id="st-signins">—</div><div id="st-signins-diff"></div></div>
     </div>
 
-    <!-- Main content: users table + live events -->
-    <div class="two-col">
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchTab('users')"  id="tab-users">Users</button>
+      <button class="tab-btn"        onclick="switchTab('events')" id="tab-events">Live Events</button>
+      <button class="tab-btn"        onclick="switchTab('guests')" id="tab-guests">Guests</button>
+    </div>
 
-      <!-- Users table -->
+    <!-- ── USERS TAB ── -->
+    <div id="tab-pane-users">
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-hdr">
+            Users <span id="user-count-lbl"></span>
+            <div style="display:flex;gap:6px;margin-left:auto">
+              <select class="icon-btn" id="sort-sel" onchange="applySortFilter()">
+                <option value="lastActive">Last active</option>
+                <option value="joined">Joined</option>
+                <option value="drafts">Most drafts</option>
+                <option value="sent">Most sent</option>
+              </select>
+              <button class="export-btn" onclick="exportCSV()">↓ CSV</button>
+            </div>
+          </div>
+          <div class="filter-row">
+            <input class="filter-inp" id="search-inp" placeholder="Search name, email or title…" oninput="filterTable()"/>
+          </div>
+          <div id="table-wrap"><div class="loading"><div class="spinner"></div>Loading…</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-hdr">Live events <span id="ev-count-lbl"></span></div>
+          <div class="event-list" id="event-list">
+            <div class="loading"><div class="spinner"></div>Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EVENTS TAB ── -->
+    <div id="tab-pane-events" style="display:none">
       <div class="panel">
         <div class="panel-hdr">
-          Users <span id="user-count-lbl"></span>
+          All events <span id="ev-full-count-lbl"></span>
+          <select class="icon-btn" id="ev-type-filter" onchange="filterEvents()">
+            <option value="">All types</option>
+            <option value="draft_generated">Draft generated</option>
+            <option value="email_sent">Email sent</option>
+            <option value="email_copied">Email copied</option>
+            <option value="job_saved">Job saved</option>
+            <option value="cv_uploaded">CV uploaded</option>
+            <option value="sign_in">Sign in</option>
+            <option value="share_received">Share received</option>
+            <option value="app_open">App opened</option>
+            <option value="onboarding_completed">Onboarding done</option>
+            <option value="profile_gate_completed">Profile gate done</option>
+            <option value="profile_gate_dismissed">Profile gate skipped</option>
+          </select>
         </div>
-        <div class="filter-row">
-          <input class="filter-inp" id="search-inp" placeholder="Search name or email…" oninput="filterTable()"/>
-          <button class="icon-btn" onclick="loadAll()">↺</button>
-          <button class="export-btn" onclick="exportCSV()">↓ CSV</button>
-        </div>
-        <div id="table-wrap">
-          <div class="loading"><div class="spinner"></div>Loading…</div>
-        </div>
+        <div class="event-list" style="max-height:none" id="event-list-full"></div>
       </div>
-
-      <!-- Live events feed -->
-      <div class="panel">
-        <div class="panel-hdr">Live events <span>last 50</span></div>
-        <div class="event-list" id="event-list">
-          <div class="loading"><div class="spinner"></div>Loading…</div>
-        </div>
-      </div>
-
     </div>
+
+    <!-- ── GUESTS TAB ── -->
+    <div id="tab-pane-guests" style="display:none">
+      <div class="panel">
+        <div class="panel-hdr">Guest sessions <span id="guest-count-lbl"></span></div>
+        <div id="guests-wrap"><div class="loading"><div class="spinner"></div>Loading…</div></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <!-- ── DETAIL PANEL ── -->
 <div id="detail-panel">
   <div class="dp-hdr">
-    <div><div style="font-size:14px;font-weight:700" id="dp-name"></div><div style="font-size:12px;color:var(--t3)" id="dp-email"></div></div>
+    <div>
+      <div style="font-size:14px;font-weight:700" id="dp-name"></div>
+      <div style="font-size:12px;color:var(--t3)" id="dp-email"></div>
+    </div>
     <button class="dp-close" onclick="closeDetail()">×</button>
   </div>
   <div id="dp-body"></div>
@@ -193,27 +262,28 @@
 
 <script type="module">
 // ════════════════════════════════════════════════════════════════
-// ADMIN CONFIG
-// Password is now stored in Vercel env var ADMIN_PASSWORD — not here.
-// Enter it in the login box; it's sent as a header to /api/admin.
+// STATE
 // ════════════════════════════════════════════════════════════════
 let _adminPassword = '';
+let _allUsers      = [];
+let _allEvents     = [];
+let _allGuests     = [];
+const NOW   = Date.now();
+const WEEK  = 7  * 86400_000;
+const WEEK2 = 14 * 86400_000;
 
 // ════════════════════════════════════════════════════════════════
-// Auth gate — password is validated server-side by /api/admin
+// AUTH GATE
 // ════════════════════════════════════════════════════════════════
 window.checkPw = async () => {
-  const pw = document.getElementById('pw-inp').value;
+  const pw  = document.getElementById('pw-inp').value;
   const btn = document.querySelector('.gate-btn');
   btn.textContent = 'Checking…'; btn.disabled = true;
   try {
-    const r = await fetch('/api/admin?action=users', {
-      headers: { 'x-admin-password': pw }
-    });
+    const r = await fetch('/api/admin?action=users', { headers: { 'x-admin-password': pw } });
     if (r.status === 401) {
       document.getElementById('gate-err').textContent = 'Wrong password.';
-      btn.textContent = 'Enter →'; btn.disabled = false;
-      return;
+      btn.textContent = 'Enter →'; btn.disabled = false; return;
     }
     if (!r.ok) throw new Error(await r.text());
     _adminPassword = pw;
@@ -221,59 +291,44 @@ window.checkPw = async () => {
     document.getElementById('auth-gate').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
     const data = await r.json();
-    _allUsers = data.users || [];
-    _allUsers.sort((a,b) => (b.lastActiveAt||0) - (a.lastActiveAt||0));
+    _allUsers = (data.users || []).sort((a,b) => (b.lastActiveAt||0) - (a.lastActiveAt||0));
     updateStats();
     renderTable(_allUsers);
-    document.getElementById('user-count-lbl').textContent = _allUsers.length + ' users';
-    await loadEvents();
-    document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    document.getElementById('user-count-lbl').textContent = _allUsers.length + ' total';
+    await Promise.all([ loadEvents(), loadGuests() ]);
+    setRefreshLabel();
   } catch(e) {
     document.getElementById('gate-err').textContent = 'Error: ' + e.message;
     btn.textContent = 'Enter →'; btn.disabled = false;
   }
 };
 document.getElementById('pw-inp').addEventListener('keydown', e => { if(e.key==='Enter') window.checkPw(); });
-// Auto-login if password was saved this session
-const _savedPw = sessionStorage.getItem('fursa_admin_pw');
-if (_savedPw) {
-  document.getElementById('pw-inp').value = _savedPw;
-  window.checkPw();
-}
+const _saved = sessionStorage.getItem('fursa_admin_pw');
+if (_saved) { document.getElementById('pw-inp').value = _saved; window.checkPw(); }
 
 // ════════════════════════════════════════════════════════════════
-// Data loading — all via /api/admin (Firebase Admin SDK server-side)
+// DATA LOADING
 // ════════════════════════════════════════════════════════════════
-let _allUsers  = [];
-let _allEvents = [];
-const NOW    = Date.now();
-const WEEK   = 7  * 86400 * 1000;
-const WEEK2  = 14 * 86400 * 1000;
-
 window.loadAll = async () => {
   document.getElementById('last-refresh').textContent = 'Loading…';
   try {
-    const [uRes, eRes] = await Promise.all([
+    const [uRes, eRes, gRes] = await Promise.all([
       fetch('/api/admin?action=users',  { headers: { 'x-admin-password': _adminPassword } }),
       fetch('/api/admin?action=events', { headers: { 'x-admin-password': _adminPassword } }),
+      fetch('/api/admin?action=guests', { headers: { 'x-admin-password': _adminPassword } }),
     ]);
-    if (!uRes.ok) throw new Error((await uRes.json()).error || uRes.status);
-    if (!eRes.ok) throw new Error((await eRes.json()).error || eRes.status);
-
-    const uData = await uRes.json();
-    const eData = await eRes.json();
-
-    _allUsers  = uData.users  || [];
-    _allEvents = eData.events || [];
-
+    _allUsers  = ((await uRes.json()).users  || []).sort((a,b) => (b.lastActiveAt||0) - (a.lastActiveAt||0));
+    _allEvents = (await eRes.json()).events || [];
+    _allGuests = (await gRes.json()).guests || [];
     updateStats();
     renderTable(_allUsers);
-    renderEvents(_allEvents);
-    document.getElementById('user-count-lbl').textContent = _allUsers.length + ' users';
-    document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    renderEvents(_allEvents, 'event-list');
+    renderEventsFullTab();
+    renderGuests();
+    document.getElementById('user-count-lbl').textContent = _allUsers.length + ' total';
+    setRefreshLabel();
   } catch(e) {
-    document.getElementById('table-wrap').innerHTML = `<div class="loading" style="color:var(--acc)">Error: ${e.message}</div>`;
-    document.getElementById('last-refresh').textContent = 'Failed';
+    document.getElementById('last-refresh').textContent = 'Failed: ' + e.message;
   }
 };
 
@@ -281,152 +336,320 @@ async function loadEvents() {
   try {
     const r = await fetch('/api/admin?action=events', { headers: { 'x-admin-password': _adminPassword } });
     if (!r.ok) return;
-    const data = await r.json();
-    _allEvents = data.events || [];
-    renderEvents(_allEvents);
+    _allEvents = (await r.json()).events || [];
+    renderEvents(_allEvents, 'event-list');
+    renderEventsFullTab();
     updateStats();
   } catch(_) {}
 }
 
+async function loadGuests() {
+  try {
+    const r = await fetch('/api/admin?action=guests', { headers: { 'x-admin-password': _adminPassword } });
+    if (!r.ok) return;
+    _allGuests = (await r.json()).guests || [];
+    renderGuests();
+  } catch(_) {}
+}
+
+function setRefreshLabel() {
+  document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+// Auto-refresh every 60s
+setInterval(() => { if (_adminPassword) loadAll(); }, 60_000);
+
 // ════════════════════════════════════════════════════════════════
-// Stats with week-over-week diff
+// TABS
+// ════════════════════════════════════════════════════════════════
+window.switchTab = (name) => {
+  ['users','events','guests'].forEach(t => {
+    document.getElementById('tab-pane-' + t).style.display = t === name ? '' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+  });
+};
+
+// ════════════════════════════════════════════════════════════════
+// STATS
 // ════════════════════════════════════════════════════════════════
 function updateStats() {
-  const t = (u, field) => u[field] || 0;
+  const newTW  = _allUsers.filter(u => u.createdAt && (NOW - u.createdAt) < WEEK).length;
+  const newLW  = _allUsers.filter(u => { const t=u.createdAt||0; return t>NOW-WEEK2 && t<=NOW-WEEK; }).length;
 
-  const thisWeekUsers = _allUsers.filter(u => (NOW - t(u,'createdAt')) < WEEK && t(u,'createdAt') > 0).length;
-  const lastWeekUsers = _allUsers.filter(u => {
-    const ts = t(u,'createdAt');
-    return ts > NOW - WEEK2 && ts <= NOW - WEEK;
-  }).length;
+  const evTW = _allEvents.filter(e => (NOW - (e.ts||e.createdAt||0)) < WEEK);
+  const evLW = _allEvents.filter(e => { const t=e.ts||e.createdAt||0; return t>NOW-WEEK2 && t<=NOW-WEEK; });
+  const cnt  = (evs, type) => evs.filter(e => e.type === type).length;
 
-  const evThisWeek = _allEvents.filter(e => (NOW - (e.createdAt||0)) < WEEK);
-  const evLastWeek = _allEvents.filter(e => {
-    const ts = e.createdAt || 0;
-    return ts > NOW - WEEK2 && ts <= NOW - WEEK;
-  });
+  // Include guest drafts and sent counts in totals
+  const totalDrafts = [
+    ..._allUsers,
+    ..._allGuests,
+  ].reduce((s,u) => s + (u._d?.drafts?.length ?? u.draftCount ?? 0), 0);
+  const totalSent = [
+    ..._allUsers,
+    ..._allGuests,
+  ].reduce((s,u) => s + (u._d?.stats?.sent ?? u.sentCount ?? 0), 0);
 
-  const count = (evs, type) => evs.filter(e => e.type === type).length;
-
-  setStat('st-users',   _allUsers.length,                    null);
-  setStat('st-new',     thisWeekUsers,                       diff(thisWeekUsers, lastWeekUsers));
-  setStat('st-drafts',  count(evThisWeek,'draft_generated'), diff(count(evThisWeek,'draft_generated'), count(evLastWeek,'draft_generated')));
-  setStat('st-sent',    count(evThisWeek,'email_sent'),      diff(count(evThisWeek,'email_sent'),      count(evLastWeek,'email_sent')));
-  setStat('st-signins', count(evThisWeek,'sign_in'),         diff(count(evThisWeek,'sign_in'),         count(evLastWeek,'sign_in')));
+  document.getElementById('st-users').textContent        = _allUsers.length;
+  document.getElementById('st-guests').textContent       = _allGuests.length;
+  document.getElementById('st-total-drafts').textContent = totalDrafts;
+  document.getElementById('st-total-sent').textContent   = totalSent;
+  setStat('st-new',     newTW,                          diff(newTW, newLW));
+  setStat('st-drafts',  cnt(evTW,'draft_generated'),    diff(cnt(evTW,'draft_generated'), cnt(evLW,'draft_generated')));
+  setStat('st-sent',    cnt(evTW,'email_sent'),         diff(cnt(evTW,'email_sent'),      cnt(evLW,'email_sent')));
+  setStat('st-cvs',     cnt(evTW,'cv_uploaded'),        diff(cnt(evTW,'cv_uploaded'),     cnt(evLW,'cv_uploaded')));
+  setStat('st-signins', cnt(evTW,'sign_in'),            diff(cnt(evTW,'sign_in'),         cnt(evLW,'sign_in')));
 }
-
-function setStat(id, val, diffEl) {
+function setStat(id, val, diffHtml) {
   document.getElementById(id).textContent = val;
-  const diffId = id + '-diff';
-  const el = document.getElementById(diffId);
-  if (!el || diffEl === null) return;
-  el.innerHTML = diffEl;
+  const el = document.getElementById(id + '-diff');
+  if (el && diffHtml !== null) el.innerHTML = diffHtml;
 }
-
-function diff(thisW, lastW) {
-  if (lastW === 0 && thisW === 0) return `<span class="stat-diff diff-zero">— same</span>`;
-  if (lastW === 0) return `<span class="stat-diff diff-up">↑ new</span>`;
-  const pct = Math.round(((thisW - lastW) / lastW) * 100);
-  const abs = thisW - lastW;
-  if (abs > 0) return `<span class="stat-diff diff-up">↑ ${pct > 0 ? '+'+pct : pct}% vs last week</span>`;
-  if (abs < 0) return `<span class="stat-diff diff-dn">↓ ${pct}% vs last week</span>`;
+function diff(tw, lw) {
+  if (lw===0 && tw===0) return `<span class="stat-diff diff-zero">— no change</span>`;
+  if (lw===0)           return `<span class="stat-diff diff-up">↑ new</span>`;
+  const pct = Math.round(((tw-lw)/lw)*100);
+  if (tw>lw) return `<span class="stat-diff diff-up">↑ +${pct}% vs last week</span>`;
+  if (tw<lw) return `<span class="stat-diff diff-dn">↓ ${pct}% vs last week</span>`;
   return `<span class="stat-diff diff-zero">= same as last week</span>`;
 }
 
 // ════════════════════════════════════════════════════════════════
-// Users table
+// USERS TABLE
 // ════════════════════════════════════════════════════════════════
 function renderTable(users) {
-  if (!users.length) {
-    document.getElementById('table-wrap').innerHTML = `<div class="loading">No users found.</div>`;
-    return;
-  }
+  if (!users.length) { document.getElementById('table-wrap').innerHTML=`<div class="empty">No users found.</div>`; return; }
   document.getElementById('table-wrap').innerHTML = `
     <table>
       <thead><tr>
-        <th>User</th><th>Joined</th><th>Last active</th>
-        <th>Drafts</th><th>Sent</th><th>Status</th><th></th>
+        <th>User</th><th>Title</th><th>Joined</th><th>Last active</th>
+        <th>Drafts</th><th>Sent</th><th>CV</th><th>Status</th><th></th>
       </tr></thead>
-      <tbody>${users.map(u => userRow(u)).join('')}</tbody>
+      <tbody>${users.map(userRow).join('')}</tbody>
     </table>`;
 }
-
 function userRow(u) {
-  const name     = [u._p?.firstName, u._p?.lastName].filter(Boolean).join(' ') || u.displayName || '—';
-  const email    = u.email || u._p?.authEmail || '—';
-  const photo    = u.photoUrl || u._p?.photoUrl || '';
-  const lastMs   = u.lastActiveAt || 0;
-  const joinMs   = u.createdAt    || lastMs;
-  const isActive = lastMs && (NOW - lastMs) < WEEK;
-  const ini      = name === '—' ? '?' : name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const name   = [u._p?.firstName, u._p?.lastName].filter(Boolean).join(' ') || u.displayName || '—';
+  const email  = u.email || u._p?.authEmail || '—';
+  const photo  = u.photoUrl || u._p?.photoUrl || '';
+  const title  = u._p?.currentTitle || '—';
+  const lastMs = u.lastActiveAt || 0;
+  const joinMs = u.createdAt    || 0;
+  const drafts = u._d?.drafts?.length ?? u.draftCount ?? 0;
+  const sent   = u._d?.stats?.sent   ?? u.sentCount  ?? 0;
+  const hasCV  = !!(u._p?.cvName);
+  const active = lastMs && (NOW - lastMs) < WEEK;
+  const ini    = name==='—' ? '?' : name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
   return `<tr>
     <td><div class="user-cell">
       ${photo ? `<img src="${photo}" class="u-avatar" alt=""/>` : `<div class="u-avatar">${_e(ini)}</div>`}
       <div><div class="u-name">${_e(name)}</div><div class="u-email">${_e(email)}</div></div>
     </div></td>
+    <td style="font-size:12px;color:var(--t2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_e(title)}">${_e(title)}</td>
     <td style="font-size:12px;color:var(--t2)">${joinMs ? fmtDate(joinMs) : '—'}</td>
     <td style="font-size:12px;color:var(--t2)">${lastMs ? fmtAgo(lastMs) : '—'}</td>
-    <td style="font-weight:600">${u.draftCount || 0}</td>
-    <td style="font-weight:600;color:var(--grn)">${u.sentCount || 0}</td>
-    <td><span class="pill ${isActive ? 'pill-grn' : 'pill-gray'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+    <td style="font-weight:600">${drafts}</td>
+    <td style="font-weight:600;color:var(--grn)">${sent}</td>
+    <td>${hasCV ? `<span class="pill pill-grn">✓</span>` : `<span class="pill pill-gray">—</span>`}</td>
+    <td><span class="pill ${active ? 'pill-grn' : 'pill-gray'}">${active ? 'Active' : 'Inactive'}</span></td>
     <td><button class="detail-btn" onclick="openDetail('${u.uid}')">View →</button></td>
   </tr>`;
 }
-
-window.filterTable = () => {
-  const q = document.getElementById('search-inp').value.toLowerCase();
-  if (!q) { renderTable(_allUsers); return; }
-  renderTable(_allUsers.filter(u =>
+window.filterTable = () => applySortFilter();
+window.applySortFilter = () => {
+  const q   = document.getElementById('search-inp').value.toLowerCase();
+  const key = document.getElementById('sort-sel')?.value || 'lastActive';
+  let list  = [..._allUsers].sort((a,b) => {
+    if (key==='lastActive') return (b.lastActiveAt||0)-(a.lastActiveAt||0);
+    if (key==='joined')     return (b.createdAt||0)-(a.createdAt||0);
+    if (key==='drafts')     return ((b._d?.drafts?.length||b.draftCount||0))-((a._d?.drafts?.length||a.draftCount||0));
+    if (key==='sent')       return ((b._d?.stats?.sent||b.sentCount||0))-((a._d?.stats?.sent||a.sentCount||0));
+    return 0;
+  });
+  if (q) list = list.filter(u =>
     (u.displayName||'').toLowerCase().includes(q) ||
     (u.email||'').toLowerCase().includes(q) ||
-    (u._p?.firstName||'').toLowerCase().includes(q)
-  ));
+    (u._p?.firstName||'').toLowerCase().includes(q) ||
+    (u._p?.currentTitle||'').toLowerCase().includes(q)
+  );
+  renderTable(list);
 };
 
 // ════════════════════════════════════════════════════════════════
-// Events feed
+// EVENTS
 // ════════════════════════════════════════════════════════════════
 const EV_DOTS = {
-  draft_generated: 'ev-dot-draft',
-  email_sent:      'ev-dot-sent',
-  job_saved:       'ev-dot-save',
-  cv_uploaded:     'ev-dot-cv',
-  sign_in:         'ev-dot-signin',
-  share_received:  'ev-dot-share',
+  draft_generated:        'ev-dot-draft',
+  email_sent:             'ev-dot-sent',
+  email_copied:           'ev-dot-copy',
+  job_saved:              'ev-dot-save',
+  cv_uploaded:            'ev-dot-cv',
+  sign_in:                'ev-dot-signin',
+  share_received:         'ev-dot-share',
+  app_open:               'ev-dot-open',
+  onboarding_completed:   'ev-dot-gate',
+  profile_gate_completed: 'ev-dot-gate',
+  profile_gate_dismissed: 'ev-dot-gate',
 };
 const EV_LABELS = {
-  draft_generated: 'Draft generated',
-  email_sent:      'Email sent',
-  job_saved:       'Job saved',
-  cv_uploaded:     'CV uploaded',
-  sign_in:         'Sign in',
-  share_received:  'Share received',
+  draft_generated:        'Draft generated',
+  email_sent:             'Email sent',
+  email_copied:           'Email copied',
+  job_saved:              'Job saved',
+  cv_uploaded:            'CV uploaded',
+  sign_in:                'Sign in',
+  share_received:         'Share received',
+  app_open:               'App opened',
+  onboarding_completed:   'Onboarding done',
+  profile_gate_completed: 'Profile gate done',
+  profile_gate_dismissed: 'Profile gate skipped',
 };
-
-function renderEvents(events) {
-  if (!events.length) {
-    document.getElementById('event-list').innerHTML = `<div class="loading" style="font-size:12px;padding:20px">No events yet</div>`;
-    return;
-  }
-  document.getElementById('event-list').innerHTML = events.map(e => {
+function evMeta(e) {
+  if (e.company)   return e.company + (e.jobTitle ? ' · ' + e.jobTitle : '');
+  if (e.toEmail)   return e.toEmail;
+  if (e.method)    return 'via ' + e.method;
+  if (e.fileName)  return e.fileName;
+  if (e.platform)  return e.platform + (e.standalone ? ' · installed' : '');
+  return '';
+}
+function renderEvents(events, targetId) {
+  const el = document.getElementById(targetId);
+  if (!events.length) { el.innerHTML=`<div class="empty">No events yet</div>`; return; }
+  el.innerHTML = events.map(e => {
     const name  = e._user?._p?.firstName || e._user?.displayName?.split(' ')[0] || 'User';
-    const dot   = EV_DOTS[e.type]   || 'ev-dot-signin';
+    const dot   = EV_DOTS[e.type]   || 'ev-dot-open';
     const label = EV_LABELS[e.type] || e.type;
-    const meta  = e.company ? `${e.company}${e.jobTitle ? ' · ' + e.jobTitle : ''}` : (e.method || e.fileName || '');
-    const t     = e.createdAt || 0;
+    const meta  = evMeta(e);
+    const t     = e.ts || e.createdAt || 0;
     return `<div class="event-item">
-      <div class="ev-dot ${dot}" style="margin-top:3px"></div>
+      <div class="ev-dot ${dot}"></div>
       <div style="flex:1;min-width:0">
         <div class="ev-type">${_e(label)}</div>
-        <div class="ev-meta">${_e(name)}${meta ? ' · ' + _e(meta) : ''}</div>
+        <div class="ev-meta">${_e(name)}${meta?' · '+_e(meta):''}</div>
       </div>
-      <div class="ev-time">${t ? fmtAgo(t) : ''}</div>
+      <div class="ev-time">${t?fmtAgo(t):''}</div>
     </div>`;
   }).join('');
+  if (targetId==='event-list')
+    document.getElementById('ev-count-lbl').textContent = events.length + ' events';
 }
+function renderEventsFullTab() {
+  document.getElementById('ev-full-count-lbl').textContent = _allEvents.length + ' total';
+  filterEvents();
+}
+window.filterEvents = () => {
+  const type = document.getElementById('ev-type-filter')?.value || '';
+  renderEvents(type ? _allEvents.filter(e=>e.type===type) : _allEvents, 'event-list-full');
+};
 
 // ════════════════════════════════════════════════════════════════
-// Detail panel
+// GUESTS
+// ════════════════════════════════════════════════════════════════
+function renderGuests() {
+  const wrap = document.getElementById('guests-wrap');
+  document.getElementById('guest-count-lbl').textContent = _allGuests.length + ' sessions';
+  if (!_allGuests.length) { wrap.innerHTML=`<div class="empty">No guest sessions yet.</div>`; return; }
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>Name / email</th><th>Platform</th><th>Last active</th>
+      <th>Drafts</th><th>Sent</th><th>CV</th><th>Activity</th><th></th>
+    </tr></thead>
+    <tbody>${_allGuests.map(g => {
+      const p      = g._p || {};
+      const name   = [p.firstName, p.lastName].filter(Boolean).join(' ') || '—';
+      const email  = p.email || p.authEmail || '—';
+      const drafts = g._d?.drafts?.length ?? g.draftCount ?? 0;
+      const sent   = g._d?.stats?.sent   ?? g.sentCount  ?? 0;
+      const hasCV  = !!(p.cvName || g.hasCV);
+      const types  = Object.entries(g.eventTypes||{}).sort((a,b)=>b[1]-a[1])
+        .slice(0,3).map(([t,n]) => `${EV_LABELS[t]||t} ×${n}`).join(' · ');
+      const platform = g.platform || '—';
+      const pIcon    = platform==='ios' ? '🍎' : platform==='android' ? '🤖' : '🖥';
+      return `<tr>
+        <td><div class="u-name">${_e(name)}</div><div class="u-email">${_e(email)}</div></td>
+        <td style="font-size:12px">${pIcon} ${_e(platform)}${g.standalone?' · installed':''}</td>
+        <td style="font-size:12px;color:var(--t2)">${g.lastActiveAt ? fmtAgo(g.lastActiveAt) : '—'}</td>
+        <td style="font-weight:600">${drafts}</td>
+        <td style="font-weight:600;color:var(--grn)">${sent}</td>
+        <td>${hasCV ? `<span class="pill pill-grn">✓</span>` : `<span class="pill pill-gray">—</span>`}</td>
+        <td style="font-size:11px;color:var(--t3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_e(types)}">${_e(types||'—')}</td>
+        <td><button class="detail-btn" onclick="openGuestDetail('${g.gid}')">View →</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+window.openGuestDetail = (gid) => {
+  const g = _allGuests.find(x => x.gid === gid); if (!g) return;
+  const p = g._p || {}, d = g._d || {};
+  const drafts = Array.isArray(d.drafts) ? d.drafts : [];
+  const links  = Array.isArray(d.links)  ? d.links  : [];
+  const name   = [p.firstName, p.lastName].filter(Boolean).join(' ') || '— Guest —';
+  const email  = p.email || p.authEmail || '—';
+
+  document.getElementById('dp-name').textContent  = name;
+  document.getElementById('dp-email').textContent = email + ' (guest)';
+
+  const byStatus = { draft:0, sent:0, scheduled:0 };
+  drafts.forEach(dr => { if (byStatus[dr.status]!==undefined) byStatus[dr.status]++; });
+
+  const types = Object.entries(g.eventTypes||{}).sort((a,b)=>b[1]-a[1])
+    .map(([t,n]) => `${EV_LABELS[t]||t} ×${n}`).join(', ');
+
+  document.getElementById('dp-body').innerHTML = `
+
+    <div class="dp-section">
+      <div class="dp-stitle">Identity</div>
+      ${kv('Name',      [p.firstName,p.lastName].filter(Boolean).join(' ')||'—')}
+      ${kv('Email',     p.email || p.authEmail || '—')}
+      ${kv('Phone',     p.phone       || '—')}
+      ${kv('Location',  [p.city,p.country].filter(Boolean).join(', ')||'—')}
+      ${kv('Guest ID',  `<span style="font-family:monospace;font-size:10px;color:var(--t3)">${gid.slice(0,24)}…</span>`)}
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-stitle">Professional</div>
+      ${kv('Title',      p.currentTitle || '—')}
+      ${kv('Experience', p.yearsExp ? p.yearsExp+' yrs' : '—')}
+      ${kv('Skills',     p.skills ? `<span style="font-size:11px;line-height:1.5;text-align:right;display:block">${_e(p.skills)}</span>` : '—')}
+      ${kv('CV',         p.cvName  ? `✓ ${_e(p.cvName)}` : '—')}
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-stitle">Session</div>
+      ${kv('Platform',    (g.platform||'—') + (g.standalone?' · installed PWA':''))}
+      ${kv('Last active', g.lastActiveAt ? fmtDate(g.lastActiveAt) : '—')}
+      ${kv('Total events', g.eventCount || 0)}
+      ${kv('Total drafts', drafts.length)}
+      ${kv('↳ Active',     byStatus.draft)}
+      ${kv('↳ Sent',       byStatus.sent)}
+      ${kv('Saved posts',  links.length)}
+      ${kv('Activity',     `<span style="font-size:11px;text-align:right;display:block;line-height:1.6">${_e(types||'—')}</span>`)}
+    </div>
+
+    ${drafts.length ? `
+    <div class="dp-section">
+      <div class="dp-stitle">Drafts (${drafts.length})</div>
+      ${drafts.slice(0,10).map(dr => {
+        const bcls = {sent:'dr-badge-sent',scheduled:'dr-badge-sched',draft:'dr-badge-draft'}[dr.status]||'dr-badge-draft';
+        const blbl = {sent:'Sent',scheduled:'Scheduled',draft:'Draft'}[dr.status]||'Draft';
+        return `<div class="draft-item">
+          <div class="dr-co">${_e(dr.company||'—')}</div>
+          <div class="dr-role">${_e(dr.jobTitle||'—')}</div>
+          <div class="dr-st">
+            <span class="dr-badge ${bcls}">${blbl}</span>
+            ${dr.toEmail?`<span>${_e(dr.toEmail)}</span>`:''}
+          </div>
+        </div>`;
+      }).join('')}
+      ${drafts.length>10?`<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px">+${drafts.length-10} more</div>`:''}
+    </div>` : ''}
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+};
+
+// ════════════════════════════════════════════════════════════════
+// DETAIL PANEL
 // ════════════════════════════════════════════════════════════════
 window.openDetail = (uid) => {
   const u = _allUsers.find(x => x.uid === uid); if (!u) return;
@@ -434,65 +657,113 @@ window.openDetail = (uid) => {
   const drafts = Array.isArray(d.drafts) ? d.drafts : [];
   const links  = Array.isArray(d.links)  ? d.links  : [];
   const name   = [p.firstName, p.lastName].filter(Boolean).join(' ') || u.displayName || '—';
-  const email  = u.email || p.authEmail || '—';
 
   document.getElementById('dp-name').textContent  = name;
-  document.getElementById('dp-email').textContent = email;
+  document.getElementById('dp-email').textContent = u.email || p.authEmail || '—';
+
+  const byStatus = { draft:0, sent:0, scheduled:0 };
+  drafts.forEach(dr => { if (byStatus[dr.status]!==undefined) byStatus[dr.status]++; });
+
   document.getElementById('dp-body').innerHTML = `
+
     <div class="dp-section">
-      <div class="dp-stitle">Profile</div>
-      ${kv('Name',        [p.firstName, p.lastName].filter(Boolean).join(' ') || '—')}
+      <div class="dp-stitle">Identity</div>
+      ${kv('Name',        [p.firstName,p.lastName].filter(Boolean).join(' ')||'—')}
       ${kv('Email',       p.email || p.authEmail || '—')}
-      ${kv('Title',       p.currentTitle || '—')}
-      ${kv('Exp',         p.yearsExp ? p.yearsExp + ' yrs' : '—')}
-      ${kv('Location',    [p.city, p.country].filter(Boolean).join(', ') || '—')}
-      ${kv('Skills',      p.skills ? p.skills.slice(0,80) + (p.skills.length>80?'…':'') : '—')}
-      ${kv('UID',         `<span style="font-family:monospace;font-size:10px">${uid}</span>`)}
+      ${kv('Phone',       p.phone       || '—')}
+      ${kv('Location',    [p.city,p.country].filter(Boolean).join(', ')||'—')}
+      ${kv('Nationality', p.nationality || '—')}
+      ${kv('LinkedIn',    p.linkedinUrl ? `<a href="${_e(p.linkedinUrl)}" target="_blank">View →</a>` : '—')}
+      ${kv('Auth UID',    `<span style="font-family:monospace;font-size:10px;color:var(--t3)">${uid}</span>`)}
     </div>
+
+    <div class="dp-section">
+      <div class="dp-stitle">Professional</div>
+      ${kv('Title',       p.currentTitle || '—')}
+      ${kv('Experience',  p.yearsExp ? p.yearsExp+' yrs' : '—')}
+      ${kv('Skills',      p.skills ? `<span style="font-size:11px;line-height:1.5;text-align:right;display:block">${_e(p.skills)}</span>` : '—')}
+      ${kv('CV',          p.cvName  ? `✓ ${_e(p.cvName)} (${_e(p.cvSize||'')})` : '—')}
+      ${p.summary ? `<div style="margin-top:10px;font-size:12px;color:var(--t2);line-height:1.55;padding:10px;background:var(--s1);border-radius:8px">${_e(p.summary)}</div>` : ''}
+    </div>
+
     <div class="dp-section">
       <div class="dp-stitle">Activity</div>
-      ${kv('Drafts',      drafts.length)}
-      ${kv('Sent',        d.stats?.sent || u.sentCount || 0)}
-      ${kv('Saved posts', links.length)}
-      ${kv('Last active', u.lastActiveAt ? fmtDate(u.lastActiveAt) : '—')}
+      ${kv('Joined',       u.createdAt    ? fmtDate(u.createdAt)    : '—')}
+      ${kv('Last active',  u.lastActiveAt ? fmtDate(u.lastActiveAt) : '—')}
+      ${kv('Total drafts', drafts.length)}
+      ${kv('↳ Active',     byStatus.draft)}
+      ${kv('↳ Scheduled',  byStatus.scheduled)}
+      ${kv('↳ Sent',       byStatus.sent)}
+      ${kv('Sent (stat)',  d.stats?.sent ?? u.sentCount ?? 0)}
+      ${kv('Saved posts',  links.length)}
     </div>
+
     ${drafts.length ? `
     <div class="dp-section">
-      <div class="dp-stitle">Recent drafts (${drafts.length})</div>
-      ${drafts.slice(0,8).map(dr => `
-        <div class="draft-item">
+      <div class="dp-stitle">Drafts (${drafts.length})</div>
+      ${drafts.slice(0,10).map(dr => {
+        const bcls = {sent:'dr-badge-sent',scheduled:'dr-badge-sched',draft:'dr-badge-draft'}[dr.status]||'dr-badge-draft';
+        const blbl = {sent:'Sent',scheduled:'Scheduled',draft:'Draft'}[dr.status]||'Draft';
+        return `<div class="draft-item">
           <div class="dr-co">${_e(dr.company||'—')}</div>
           <div class="dr-role">${_e(dr.jobTitle||'—')}</div>
-          <div class="dr-st">${dr.status||'draft'} · ${_e(dr.toEmail||'—')}</div>
+          <div class="dr-st">
+            <span class="dr-badge ${bcls}">${blbl}</span>
+            ${dr.toEmail  ? `<span>${_e(dr.toEmail)}</span>` : ''}
+            ${dr.createdAt? `<span style="color:var(--t3)">${fmtDate(new Date(dr.createdAt).getTime())}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+      ${drafts.length>10 ? `<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px">+${drafts.length-10} more</div>` : ''}
+    </div>` : ''}
+
+    ${links.length ? `
+    <div class="dp-section">
+      <div class="dp-stitle">Saved posts (${links.length})</div>
+      ${links.slice(0,8).map(l=>`
+        <div class="link-item">
+          <div style="flex:1;min-width:0">
+            <div class="link-co">${_e(l.company||'—')}${l.jobTitle?' · '+_e(l.jobTitle):''}</div>
+            <a class="link-url" href="${_e(l.url)}" target="_blank">${_e(l.url.length>50?l.url.slice(0,50)+'…':l.url)}</a>
+          </div>
+          ${l.email?`<span style="font-size:11px;color:var(--t3);flex-shrink:0">${_e(l.email)}</span>`:''}
         </div>`).join('')}
-      ${drafts.length > 8 ? `<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px">+${drafts.length-8} more</div>` : ''}
+      ${links.length>8?`<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px">+${links.length-8} more</div>`:''}
     </div>` : ''}
   `;
+
   document.getElementById('detail-panel').classList.add('open');
 };
 window.closeDetail = () => document.getElementById('detail-panel').classList.remove('open');
+document.addEventListener('keydown', e => { if(e.key==='Escape') window.closeDetail(); });
 
 // ════════════════════════════════════════════════════════════════
-// CSV export
+// CSV EXPORT
 // ════════════════════════════════════════════════════════════════
 window.exportCSV = () => {
-  const headers = ['UID','Name','Email','Title','City','Country','YearsExp','Skills','Drafts','Sent','LastActive'];
+  const headers = ['UID','Name','Email','Phone','Title','City','Country','Nationality','YearsExp','Skills','CV','TotalDrafts','ActiveDrafts','SentDrafts','SentCounter','SavedPosts','Joined','LastActive'];
   const rows = _allUsers.map(u => {
-    const p = u._p || {}, d = u._d || {};
+    const p=u._p||{}, d=u._d||{};
+    const drafts=Array.isArray(d.drafts)?d.drafts:[];
     return [
       u.uid,
-      [p.firstName, p.lastName].filter(Boolean).join(' ') || u.displayName || '',
-      u.email || p.authEmail || '',
-      p.currentTitle || '', p.city || '', p.country || '', p.yearsExp || '',
+      [p.firstName,p.lastName].filter(Boolean).join(' ')||u.displayName||'',
+      u.email||p.authEmail||'',
+      p.phone||'', p.currentTitle||'', p.city||'', p.country||'', p.nationality||'', p.yearsExp||'',
       (p.skills||'').replace(/,/g,';'),
-      u.draftCount || (Array.isArray(d.drafts) ? d.drafts.length : 0),
-      u.sentCount  || d.stats?.sent || 0,
+      p.cvName||'',
+      drafts.length,
+      drafts.filter(dr=>dr.status==='draft').length,
+      drafts.filter(dr=>dr.status==='sent').length,
+      d.stats?.sent??u.sentCount??0,
+      Array.isArray(d.links)?d.links.length:0,
+      u.createdAt    ? new Date(u.createdAt).toISOString()    : '',
       u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : '',
-    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
   });
-  const csv  = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a    = Object.assign(document.createElement('a'), {
+  const csv  = [headers.join(','),...rows].join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a    = Object.assign(document.createElement('a'),{
     href: URL.createObjectURL(blob),
     download: `fursa-users-${new Date().toISOString().slice(0,10)}.csv`
   });
@@ -500,17 +771,17 @@ window.exportCSV = () => {
 };
 
 // ════════════════════════════════════════════════════════════════
-// Utilities
+// UTILITIES
 // ════════════════════════════════════════════════════════════════
-function _e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function kv(k, v) { return `<div class="kv"><span class="kv-k">${k}</span><span class="kv-v">${v}</span></div>`; }
-function fmtDate(ms) { return new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
-function fmtAgo(ms)  {
-  const s = Math.floor((NOW - ms) / 1000);
-  if (s < 60)    return 'just now';
-  if (s < 3600)  return Math.floor(s/60)   + 'm ago';
-  if (s < 86400) return Math.floor(s/3600) + 'h ago';
-  return Math.floor(s/86400) + 'd ago';
+function _e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function kv(k,v){ return `<div class="kv"><span class="kv-k">${k}</span><span class="kv-v">${v}</span></div>`; }
+function fmtDate(ms){ return new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function fmtAgo(ms){
+  const s=Math.floor((Date.now()-ms)/1000);
+  if(s<60)    return 'just now';
+  if(s<3600)  return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
 }
 </script>
 </body>
