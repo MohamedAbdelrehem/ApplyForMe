@@ -286,9 +286,23 @@ const Auth = (() => {
     const count = State.drafts.length;
     // Track for ALL users — guests and logged-in alike
     _trackEvent('draft_generated', { company: draft.company, jobTitle: draft.jobTitle });
+
+    // CV nudge — shown to everyone (guest or logged-in) who generated without a CV.
+    // Only fires on the first draft so it's not repetitive.
+    if (!State.profile.cvName && count === 1) {
+      setTimeout(() => {
+        _showNudgeBanner(
+          '📄 No CV attached — your email is using defaults. Upload your CV to make it personal.',
+          'Upload CV →',
+          () => { switchTab('settings'); }
+        );
+      }, 1200); // small delay so draft card renders first
+      return;
+    }
+
     if (isLoggedIn()) { syncNow(); return; }
     if (count === 1) {
-      _showNudgeBanner('✓ Draft ready — sign in free to save it across all your devices', 'Save free →', () => showLoginModal('first_draft'));
+      _showNudgeBanner('✓ Draft ready - sign in free to save it across all your devices', 'Save free →', () => showLoginModal('first_draft'));
     } else {
       _showNudgeModal(count);
     }
@@ -319,7 +333,7 @@ const Auth = (() => {
     const el = document.createElement('div');
     el.id = 'auth-nudge-banner';
     el.innerHTML = `<div class="anb-text">${text}</div><button class="anb-cta">${cta}</button><button class="anb-x">×</button>`;
-    const hero = document.querySelector('.home-hero') || document.querySelector('.app-hdr');
+    const hero = document.querySelector('.stats-row') || document.querySelector('.app-hdr');
     hero?.after(el);
     el.querySelector('.anb-cta').onclick = () => { _removeNudgeBanner(); action(); };
     el.querySelector('.anb-x').onclick   = () => _removeNudgeBanner();
@@ -342,7 +356,7 @@ const Auth = (() => {
         <div class="nudge-title">Don't lose your ${count} draft${count > 1 ? 's' : ''}</div>
         <div class="nudge-sub">Sign in free to save your applications across all devices — and track every email you send.</div>
         <div class="nudge-perks">
-          <div class="nudge-perk"><span class="np-icon">☁️</span><span>Sync across iPhone, iPad &amp; desktop</span></div>
+          <div class="nudge-perk"><span class="np-icon">☁️</span><span>Sync across iPhone, iPad, Android &amp; desktop</span></div>
           <div class="nudge-perk"><span class="np-icon">📊</span><span>Track sent vs pending applications</span></div>
           <div class="nudge-perk"><span class="np-icon">🔒</span><span>Your data — private, never shared</span></div>
         </div>

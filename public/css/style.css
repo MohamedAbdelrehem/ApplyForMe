@@ -1108,3 +1108,28 @@ textarea.fi { resize:none; line-height:1.5; }
   margin-top: 2px;
 }
 .pg-confirm-cancel-btn:active { opacity: .6; }
+
+/* Primary CV button (gate) */
+.pg-cv-btn--primary {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 15px 16px;
+  border-radius: var(--r-md);
+  border: none;
+  background: var(--acc); color: #fff;
+  font-size: 15px; font-weight: 700;
+  font-family: var(--fd); cursor: pointer;
+  transition: opacity .15s;
+  -webkit-appearance: none;
+  box-shadow: 0 2px 10px rgba(200,75,47,0.25);
+}
+.pg-cv-btn--primary:active { opacity: .82; }
+.pg-cv-btn--primary.loading { opacity: .6; pointer-events: none; }
+
+/* Social proof line under CV button */
+.pg-social-proof {
+  display: flex; align-items: flex-start; gap: 7px;
+  font-size: 12px; color: var(--t3);
+  margin: 0px 2px 0;
+  line-height: 1.5;
+}
