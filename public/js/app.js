@@ -6,6 +6,8 @@ const State = {
   drafts: [],
   links: [],       // saved posts: { id, url, poster, company, jobTitle, email, savedAt }
   stats: { sent: 0 },
+  schedOpt: 'now',   // default schedule option — prevents undefined in confirmSched()
+  activeCard: null,  // id of the draft card currently open in the schedule overlay
 
   load() {
     try {
@@ -491,11 +493,23 @@ async function regenDraft(id) {
   toast('Regenerating…');
   try {
     const email = await AI.generateEmailDraft(
-      { company:d.company, jobTitle:d.jobTitle, recruiterName:d.recruiterName, skills:d.skills, requirements:d.requirements },
+      {
+        company:        d.company,
+        jobTitle:       d.jobTitle,
+        recruiterName:  d.recruiterName,
+        recruiterEmail: d.toEmail,   // pass existing so AI can reference it
+        skills:         d.skills,
+        requirements:   d.requirements
+      },
       State.profile
     );
     if(email){
-      State.updateDraft(id, { subject:email.subject, body:email.body });
+      State.updateDraft(id, {
+        subject: email.subject,
+        body:    email.body,
+        // only overwrite toEmail if the AI returned a non-empty one
+        ...(email.toEmail && { toEmail: email.toEmail }),
+      });
       renderCards(); toast('Email regenerated!');
     }
   } catch { toast('Regen failed — try again'); }
@@ -513,15 +527,6 @@ function copyDraft(id) {
     toast('Copied to clipboard!');
   }
   if (typeof Auth !== 'undefined') Auth.track('email_copied', { company: d.company, jobTitle: d.jobTitle });
-}
-
-function toggleCardMenu(id, e) {
-  e.stopPropagation();
-  const menu = document.getElementById('menu-'+id);
-  const isOpen = menu.classList.contains('open');
-  // Close all other open menus
-  document.querySelectorAll('.dcard-menu.open').forEach(m => m.classList.remove('open'));
-  if (!isOpen) menu.classList.add('open');
 }
 
 function showDelConfirm(id) {
@@ -643,7 +648,7 @@ function deleteDraft(id) { confirmDeleteFromMenu(id); }
 
 // ── SCHEDULE ──────────────────────────────────────────────────────
 function openSched(id){ State.activeCard=id; document.getElementById('overlay').classList.add('open'); }
-function closeSched() { document.getElementById('overlay').classList.remove('open'); }
+function closeSched() { document.getElementById('overlay').classList.remove('open'); State.schedOpt = 'now'; }
 
 function selectOpt(el,val){
   document.querySelectorAll('.sopt').forEach(o=>o.classList.remove('sel'));

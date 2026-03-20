@@ -179,7 +179,7 @@ const Auth = (() => {
           email:        State.profile.authEmail || '',
           displayName:  [State.profile.firstName, State.profile.lastName].filter(Boolean).join(' '),
           photoUrl:     State.profile.photoUrl  || '',
-          draftCount:   State.drafts.length,
+          draftCount:   State.drafts.filter(d => d.status !== 'sent').length,
           sentCount:    State.stats.sent || 0,
           lastActiveAt: ts,
           createdAt:    ts,
@@ -198,7 +198,14 @@ const Auth = (() => {
         getDoc(doc(db, `users/${uid()}/data/main`)),
       ]);
       if (pSnap.exists()) {
-        Object.entries(pSnap.data()).forEach(([k, v]) => { if (v && !State.profile[k]) State.profile[k] = v; });
+        // Cloud wins for all profile fields — except auth fields which are
+        // always set from the live Firebase Auth object in _onSignedIn().
+        const cloudProfile = pSnap.data();
+        const AUTH_FIELDS = new Set(['authUid', 'authEmail', 'photoUrl']);
+        Object.entries(cloudProfile).forEach(([k, v]) => {
+          if (AUTH_FIELDS.has(k)) return; // already set correctly by _onSignedIn
+          if (v !== undefined && v !== null && v !== '') State.profile[k] = v;
+        });
       }
       if (dSnap.exists()) {
         const c = dSnap.data();
@@ -247,21 +254,17 @@ const Auth = (() => {
 
     try {
       const { db, dbMod } = await ensureFirebase();
-      const { doc, setDoc, arrayUnion } = dbMod;
+      const { doc, setDoc, addDoc, collection, arrayUnion } = dbMod;
 
-      let docPath;
+      // ── 1. Daily analytics doc (existing behaviour) ───────────────
+      let analyticPath;
       if (uid()) {
-        // Logged-in: store under their user doc
-        docPath = `users/${uid()}/analytics/${today}`;
+        analyticPath = `users/${uid()}/analytics/${today}`;
       } else {
-        // Guest: store under anonymous analytics collection
-        docPath = `analytics/${getGuestId()}/days/${today}`;
+        analyticPath = `analytics/${getGuestId()}/days/${today}`;
       }
-
-      // arrayUnion merges into an existing day doc if the user had
-      // multiple sessions today (e.g. reopened app twice in one day).
       await setDoc(
-        doc(db, docPath),
+        doc(db, analyticPath),
         {
           events:    arrayUnion(...events),
           guestId:   uid() ? null : getGuestId(),
@@ -270,6 +273,20 @@ const Auth = (() => {
         },
         { merge: true }
       );
+
+      // ── 2. Per-event documents in users/{uid}/events ──────────────
+      // This is the subcollection the admin panel queries. Only write
+      // for logged-in users (guests are covered by the analytics path).
+      if (uid()) {
+        await Promise.all(events.map(ev =>
+          addDoc(collection(db, `users/${uid()}/events`), {
+            ...ev,
+            createdAt: ev.ts,  // admin sorts by createdAt
+            uid: uid(),
+          })
+        ));
+      }
+
     } catch(e) {
       // Restore events to buffer so they're not silently lost
       // (they'll be retried on the next flush attempt)
