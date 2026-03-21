@@ -128,6 +128,13 @@ export default async function handler(req, res) {
       await Promise.all(snap.docs.map(async docSnap => {
         const gid  = docSnap.id;
         const root = docSnap.data();
+
+        // Skip guests that have already converted to a registered user account.
+        // The client stamps convertedToUid on the root doc during migration
+        // before deleting subcollections — so even if deletion is mid-flight,
+        // converted guests are invisible in the admin panel immediately.
+        if (root.convertedToUid) return;
+
         let profile = {}, data = {}, eventCount = 0, eventTypes = {};
 
         try {

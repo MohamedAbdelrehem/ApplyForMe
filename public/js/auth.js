@@ -328,10 +328,26 @@ const Auth = (() => {
   // merges the data into State (local), then deletes the guest docs.
   // The subsequent _pushToCloud() writes everything to users/{uid}/*.
   async function _migrateGuestToUser(newUid) {
+    // Cancel any pending guest sync debounce so _pushGuestToCloud cannot
+    // fire after migration and re-create the guest doc we're about to delete.
+    clearTimeout(_syncDebounce);
+    _syncDebounce = null;
+
     const gid = getGuestId();
     try {
       const { db, dbMod } = await ensureFirebase();
-      const { doc, getDoc, deleteDoc } = dbMod;
+      const { doc, getDoc, deleteDoc, setDoc } = dbMod;
+
+      // Mark the guest doc as converted immediately — before reading subcollections.
+      // This means even if the deletion below fails or the admin panel refreshes
+      // mid-delete, the doc is stamped with convertedToUid and can be filtered out.
+      // setDoc on a non-existent doc is a no-op with merge:true if doc doesn't exist.
+      try {
+        await setDoc(doc(db, `guests/${gid}`), {
+          convertedToUid: newUid,
+          convertedAt:    Date.now(),
+        }, { merge: true });
+      } catch(_) {}
 
       const [pSnap, dSnap] = await Promise.all([
         getDoc(doc(db, `guests/${gid}/profile/main`)),
