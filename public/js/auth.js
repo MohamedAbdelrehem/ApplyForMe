@@ -194,6 +194,23 @@ const Auth = (() => {
       const { db, dbMod } = await ensureFirebase();
       const { doc, setDoc, serverTimestamp } = dbMod;
       const ts = serverTimestamp();
+
+      // Guard createdAt with a localStorage flag per UID so it is written
+      // exactly once and never overwritten on subsequent logins.
+      // merge:true does NOT protect fields you explicitly include in the
+      // payload — it only skips fields missing from the payload entirely.
+      const firstWriteKey = `fursa_joined_${uid()}`;
+      const isFirstWrite  = !localStorage.getItem(firstWriteKey);
+      const rootPayload = {
+        email:        State.profile.authEmail || '',
+        displayName:  [State.profile.firstName, State.profile.lastName].filter(Boolean).join(' '),
+        photoUrl:     State.profile.photoUrl  || '',
+        draftCount:   State.drafts.filter(d => d.status !== 'sent').length,
+        sentCount:    State.stats.sent || 0,
+        lastActiveAt: ts,
+      };
+      if (isFirstWrite) rootPayload.createdAt = ts;
+
       await Promise.all([
         setDoc(doc(db, `users/${uid()}/profile/main`), { ...State.profile, updatedAt: ts }, { merge: true }),
         setDoc(doc(db, `users/${uid()}/data/main`), {
@@ -201,22 +218,10 @@ const Auth = (() => {
           links:  State.links.slice(0, 500),
           stats:  State.stats, updatedAt: ts
         }, { merge: true }),
-        // createdAt uses merge:true but we never overwrite it if it already
-        // exists — Firestore merge only sets missing fields when the doc exists.
-        // We achieve this by writing it only as part of the initial setDoc;
-        // subsequent pushes still include it but merge:true won't overwrite.
-        setDoc(doc(db, `users/${uid()}`), {
-          email:        State.profile.authEmail || '',
-          displayName:  [State.profile.firstName, State.profile.lastName].filter(Boolean).join(' '),
-          photoUrl:     State.profile.photoUrl  || '',
-          draftCount:   State.drafts.filter(d => d.status !== 'sent').length,
-          sentCount:    State.stats.sent || 0,
-          lastActiveAt: ts,
-          // createdAt is set once — subsequent merges won't overwrite an
-          // existing field when using merge:true, so this is safe to include.
-          createdAt:    ts,
-        }, { merge: true }),
+        setDoc(doc(db, `users/${uid()}`), rootPayload, { merge: true }),
       ]);
+
+      if (isFirstWrite) localStorage.setItem(firstWriteKey, '1');
       _dirty = false;  // reset after successful push
     } catch(e) { console.warn('[Fursa] cloud push failed:', e.message); }
   }
@@ -362,23 +367,25 @@ const Auth = (() => {
 
       if (migrated) {
         State.save();
-        // Clean up guest docs now that data is in State and will be
-        // pushed to users/{uid}/* by the _pushToCloud() call in _onSignedIn.
-        // Non-fatal — orphaned guest docs are harmless if delete fails.
-        try {
-          const { collection, getDocs } = dbMod;
-          const delTargets = [];
-          if (pSnap.exists()) delTargets.push(deleteDoc(doc(db, `guests/${gid}/profile/main`)));
-          if (dSnap.exists()) delTargets.push(deleteDoc(doc(db, `guests/${gid}/data/main`)));
-          // Delete event day docs
-          const evSnap = await getDocs(collection(db, `guests/${gid}/events`));
-          evSnap.forEach(d => delTargets.push(deleteDoc(d.ref)));
-          // Delete root doc last
-          delTargets.push(deleteDoc(doc(db, `guests/${gid}`)));
-          await Promise.allSettled(delTargets);
-        } catch(_) {}
         console.info('[Fursa] guest data migrated to user account');
       }
+
+      // Always clean up guest docs — regardless of whether there was data
+      // to migrate. If the guest never flushed to Firestore (common — flush
+      // only happens on session end), migrated stays false but the root
+      // guests/{gid} doc may still exist from a previous session and would
+      // otherwise linger in the admin Guests tab forever.
+      try {
+        const { collection, getDocs } = dbMod;
+        const delTargets = [];
+        if (pSnap.exists()) delTargets.push(deleteDoc(doc(db, `guests/${gid}/profile/main`)));
+        if (dSnap.exists()) delTargets.push(deleteDoc(doc(db, `guests/${gid}/data/main`)));
+        const evSnap = await getDocs(collection(db, `guests/${gid}/events`));
+        evSnap.forEach(d => delTargets.push(deleteDoc(d.ref)));
+        // Always attempt root doc delete — deleteDoc on a non-existent doc is a no-op
+        delTargets.push(deleteDoc(doc(db, `guests/${gid}`)));
+        await Promise.allSettled(delTargets);
+      } catch(_) {}
     } catch(e) { console.warn('[Fursa] guest migration failed:', e.message); }
   }
 
