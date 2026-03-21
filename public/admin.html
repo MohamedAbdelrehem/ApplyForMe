@@ -836,10 +836,17 @@ window.openGuestDetail = (gid) => {
     </div>
     <div class="dp-section">
       <div class="dp-stitle">Professional</div>
-      ${kv('Title',      p.currentTitle || '—')}
-      ${kv('Experience', p.yearsExp ? p.yearsExp+' yrs' : '—')}
-      ${kv('Skills',     p.skills ? `<span style="font-size:11px;line-height:1.6;text-align:right;display:block">${_e(p.skills)}</span>` : '—')}
-      ${kv('CV',         p.cvName  ? `✓ ${_e(p.cvName)}` : '—')}
+      ${kv('Title',        p.currentTitle || '—')}
+      ${kv('Company',      p.currentCompany || '—')}
+      ${kv('Experience',   p.yearsExp ? p.yearsExp+' yrs' : '—')}
+      ${kv('Seniority',    p.seniorityLevel || '—')}
+      ${kv('Industry',     p.industryBackground || '—')}
+      ${kv('Notice',       p.noticePeriod || '—')}
+      ${kv('Tech skills',  p.technicalSkills||p.skills ? `<span style="font-size:11px;line-height:1.6;text-align:right;display:block">${_e(p.technicalSkills||p.skills)}</span>` : '—')}
+      ${kv('Soft skills',  p.softSkills ? `<span style="font-size:11px;line-height:1.6;text-align:right;display:block">${_e(p.softSkills)}</span>` : '—')}
+      ${kv('Education',    p.education || '—')}
+      ${kv('Certs',        p.certifications || '—')}
+      ${kv('CV',           p.cvName  ? `✓ ${_e(p.cvName)}` : '—')}
     </div>
     <div class="dp-section">
       <div class="dp-stitle">Session</div>
@@ -898,14 +905,24 @@ window.openDetail = (uid) => {
       ${kv('Location',    [p.city,p.country].filter(Boolean).join(', ')||'—')}
       ${kv('Nationality', p.nationality || '—')}
       ${kv('LinkedIn',    p.linkedinUrl ? `<a href="${_e(p.linkedinUrl.startsWith('http') ? p.linkedinUrl : 'https://' + p.linkedinUrl)}" target="_blank">View →</a>` : '—')}
+      ${kv('GitHub',      p.githubUrl ? `<a href="${_e(p.githubUrl.startsWith('http') ? p.githubUrl : 'https://' + p.githubUrl)}" target="_blank">View →</a>` : '—')}
+      ${kv('Portfolio',   p.portfolioUrl ? `<a href="${_e(p.portfolioUrl.startsWith('http') ? p.portfolioUrl : 'https://' + p.portfolioUrl)}" target="_blank">View →</a>` : '—')}
+      ${kv('Languages',   p.languages || '—')}
       ${kv('Auth UID',    `<span style="font-size:10px;color:var(--t3)">${_e(uid)}</span>`)}
     </div>
     <div class="dp-section">
       <div class="dp-stitle">Professional</div>
-      ${kv('Title',       p.currentTitle || '—')}
-      ${kv('Experience',  p.yearsExp ? p.yearsExp+' yrs' : '—')}
-      ${kv('Skills',      p.skills ? `<span style="font-size:11px;line-height:1.6;text-align:right;display:block">${_e(p.skills)}</span>` : '—')}
-      ${kv('CV',          p.cvName  ? `✓ ${_e(p.cvName)} (${_e(p.cvSize||'')})` : '—')}
+      ${kv('Title',        p.currentTitle || '—')}
+      ${kv('Company',      p.currentCompany || '—')}
+      ${kv('Experience',   p.yearsExp ? p.yearsExp+' yrs' : '—')}
+      ${kv('Seniority',    p.seniorityLevel || '—')}
+      ${kv('Industry',     p.industryBackground || '—')}
+      ${kv('Notice',       p.noticePeriod || '—')}
+      ${kv('Tech skills',  p.technicalSkills||p.skills ? `<span style="font-size:11px;line-height:1.6;text-align:right;display:block">${_e(p.technicalSkills||p.skills)}</span>` : '—')}
+      ${kv('Soft skills',  p.softSkills ? `<span style="font-size:11px;line-height:1.6;text-align:right;display:block">${_e(p.softSkills)}</span>` : '—')}
+      ${kv('Education',    p.education || '—')}
+      ${kv('Certs',        p.certifications || '—')}
+      ${kv('CV',           p.cvName  ? `✓ ${_e(p.cvName)} (${_e(p.cvSize||'')})` : '—')}
       ${p.summary ? `<div style="margin-top:12px;font-size:12px;color:var(--t2);line-height:1.6;padding:12px;background:var(--s2);border-radius:10px;border:1px solid var(--bd)">${_e(p.summary)}</div>` : ''}
     </div>
     <div class="dp-section">
@@ -966,7 +983,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') window.closeDet
 // CSV EXPORT  (FIX #7: append to DOM before click)
 // ════════════════════════════════════════════════════════════════
 window.exportCSV = () => {
-  const headers = ['UID','Name','Email','Phone','Title','City','Country','Nationality','YearsExp','Skills','CV','TotalDrafts','ActiveDrafts','SentDrafts','SentCounter','SavedPosts','Joined','LastActive'];
+  const headers = ['UID','Name','Email','Phone','Title','Company','City','Country','Nationality','Languages','YearsExp','Seniority','Industry','NoticePeriod','TechnicalSkills','SoftSkills','Education','Certifications','LinkedIn','GitHub','Portfolio','CV','TotalDrafts','ActiveDrafts','SentDrafts','SentCounter','SavedPosts','Joined','LastActive'];
   const rows = _allUsers.map(u => {
     const p=u._p||{}, d=u._d||{};
     const drafts=Array.isArray(d.drafts)?d.drafts:[];
@@ -974,8 +991,12 @@ window.exportCSV = () => {
       u.uid,
       [p.firstName,p.lastName].filter(Boolean).join(' ')||u.displayName||'',
       u.email||p.authEmail||'',
-      p.phone||'', p.currentTitle||'', p.city||'', p.country||'', p.nationality||'', p.yearsExp||'',
-      (p.skills||'').replace(/,/g,';'),
+      p.phone||'', p.currentTitle||'', p.currentCompany||'', p.city||'', p.country||'', p.nationality||'', p.languages||'', p.yearsExp||'',
+      p.seniorityLevel||'', p.industryBackground||'', p.noticePeriod||'',
+      (p.technicalSkills||p.skills||'').replace(/,/g,';'),
+      (p.softSkills||'').replace(/,/g,';'),
+      p.education||'', p.certifications||'',
+      p.linkedinUrl||'', p.githubUrl||'', p.portfolioUrl||'',
       p.cvName||'',
       drafts.length,
       drafts.filter(dr=>dr.status==='draft').length,

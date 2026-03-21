@@ -736,7 +736,7 @@ function cvRemindCancel() {
 }
 
 // ── PROFILE ───────────────────────────────────────────────────────
-const FIELDS = ['firstName','lastName','email','phone','dob','city','country','nationality','currentTitle','yearsExp','linkedinUrl','skills','coverTemplate','summary'];
+const FIELDS = ['firstName','lastName','email','phone','dob','city','country','nationality','languages','currentTitle','currentCompany','yearsExp','seniorityLevel','industryBackground','noticePeriod','technicalSkills','softSkills','education','certifications','linkedinUrl','githubUrl','portfolioUrl','coverTemplate','summary'];
 
 function loadProfileForm() {
   FIELDS.forEach(f=>{ const el=document.getElementById('pf-'+f); if(el&&State.profile[f]) el.value=State.profile[f]; });
@@ -780,9 +780,14 @@ async function handleCv(file) {
       firstName:parsed.firstName, lastName:parsed.lastName,
       email:parsed.email, phone:parsed.phone,
       city:parsed.city, country:parsed.country,
-      nationality:parsed.nationality, currentTitle:parsed.currentTitle,
-      yearsExp:parsed.yearsExp, linkedinUrl:parsed.linkedinUrl,
-      skills:parsed.skills, summary:parsed.summary
+      nationality:parsed.nationality, languages:parsed.languages,
+      currentTitle:parsed.currentTitle, currentCompany:parsed.currentCompany,
+      yearsExp:parsed.yearsExp, seniorityLevel:parsed.seniorityLevel,
+      industryBackground:parsed.industryBackground, noticePeriod:parsed.noticePeriod,
+      technicalSkills:parsed.technicalSkills, softSkills:parsed.softSkills,
+      education:parsed.education, certifications:parsed.certifications,
+      linkedinUrl:parsed.linkedinUrl, githubUrl:parsed.githubUrl,
+      portfolioUrl:parsed.portfolioUrl, summary:parsed.summary
     };
     let filled=0;
     Object.entries(map).forEach(([key,val])=>{
@@ -811,7 +816,7 @@ async function autofillFromCv() {
   try {
     const parsed=await AI.parseCv(_lastCvFile);
     let filled=0;
-    const map={firstName:parsed.firstName,lastName:parsed.lastName,email:parsed.email,phone:parsed.phone,city:parsed.city,country:parsed.country,nationality:parsed.nationality,currentTitle:parsed.currentTitle,yearsExp:parsed.yearsExp,linkedinUrl:parsed.linkedinUrl,skills:parsed.skills,summary:parsed.summary};
+    const map={firstName:parsed.firstName,lastName:parsed.lastName,email:parsed.email,phone:parsed.phone,city:parsed.city,country:parsed.country,nationality:parsed.nationality,languages:parsed.languages,currentTitle:parsed.currentTitle,currentCompany:parsed.currentCompany,yearsExp:parsed.yearsExp,seniorityLevel:parsed.seniorityLevel,industryBackground:parsed.industryBackground,noticePeriod:parsed.noticePeriod,technicalSkills:parsed.technicalSkills,softSkills:parsed.softSkills,education:parsed.education,certifications:parsed.certifications,linkedinUrl:parsed.linkedinUrl,githubUrl:parsed.githubUrl,portfolioUrl:parsed.portfolioUrl,summary:parsed.summary};
     Object.entries(map).forEach(([key,val])=>{
       if(!val) return;
       State.profile[key]=val;
@@ -1047,12 +1052,17 @@ async function profileGateCvChange(file) {
     // Write whatever we got into State.profile
     const sz = file.size < 1024*1024 ? Math.round(file.size/1024)+' KB' : (file.size/(1024*1024)).toFixed(1)+' MB';
     const map = {
-      firstName: parsed.firstName, lastName:     parsed.lastName,
-      email:     parsed.email,     phone:        parsed.phone,
-      city:      parsed.city,      country:      parsed.country,
-      nationality: parsed.nationality, currentTitle: parsed.currentTitle,
-      yearsExp:  parsed.yearsExp,  linkedinUrl:  parsed.linkedinUrl,
-      skills:    parsed.skills,    summary:      parsed.summary
+      firstName: parsed.firstName, lastName:      parsed.lastName,
+      email:     parsed.email,     phone:         parsed.phone,
+      city:      parsed.city,      country:       parsed.country,
+      nationality: parsed.nationality, languages:   parsed.languages,
+      currentTitle: parsed.currentTitle, currentCompany: parsed.currentCompany,
+      yearsExp:  parsed.yearsExp,  seniorityLevel: parsed.seniorityLevel,
+      industryBackground: parsed.industryBackground, noticePeriod: parsed.noticePeriod,
+      technicalSkills: parsed.technicalSkills, softSkills: parsed.softSkills,
+      education: parsed.education, certifications: parsed.certifications,
+      linkedinUrl: parsed.linkedinUrl, githubUrl:   parsed.githubUrl,
+      portfolioUrl: parsed.portfolioUrl, summary:   parsed.summary
     };
     Object.entries(map).forEach(([k, v]) => { if (v) State.profile[k] = v; });
     State.profile.cvName = file.name;

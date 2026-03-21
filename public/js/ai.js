@@ -128,11 +128,22 @@ Return ONLY a raw JSON object. No markdown, no code fences, no explanation. Doub
   "city": "string or null",
   "country": "string or null",
   "nationality": "string or null",
-  "currentTitle": "most recent job title as string or null",
-  "yearsExp": "total years of experience as number string e.g. 4 or null",
-  "linkedinUrl": "linkedin URL if present or null",
-  "skills": "comma-separated key technical skills as one string or null",
-  "summary": "2-sentence professional summary based on the CV or null"
+  "languages": "comma-separated languages with proficiency e.g. Arabic (Native), English (Fluent) or null",
+  "currentTitle": "most recent job title or null",
+  "currentCompany": "most recent employer name or null",
+  "yearsExp": "total years of professional experience as a number e.g. 4 or null",
+  "seniorityLevel": "one of: Junior, Mid, Senior, Lead, Manager, Executive — inferred from experience and titles or null",
+  "industryBackground": "comma-separated industries e.g. Telecom, Fintech or null",
+  "noticePeriod": "notice period if stated e.g. Immediately, 1 month, 3 months or null",
+  "technicalSkills": "comma-separated key technical skills or null",
+  "softSkills": "comma-separated soft skills if inferable or null",
+  "education": "highest degree, field, institution e.g. BSc Computer Science, Cairo University or null",
+  "certifications": "comma-separated certifications e.g. ISTQB Foundation, AWS SAA or null",
+  "linkedinUrl": "LinkedIn URL if present or null",
+  "githubUrl": "GitHub URL if present or null",
+  "portfolioUrl": "portfolio or personal website URL if present or null",
+  "summary": "2-sentence professional summary based on the CV or null",
+  "confidenceScore": "how complete and readable the CV was as a decimal 0.0 to 1.0 or null"
 }`;
 
     return callGemini(system, 'Parse this CV:\n\n' + cvText.slice(0, 6000));
@@ -194,16 +205,26 @@ Return ONLY a raw JSON object, no markdown, no code fences:
   "body": "full email body as single string with real newlines"
 }`;
 
-    const hasProfile = profile.firstName || profile.currentTitle || profile.skills;
+    const hasProfile = profile.firstName || profile.currentTitle || profile.technicalSkills || profile.skills;
     const profileBlock = hasProfile ? `
 Candidate profile:
 Name: ${[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Not provided'}
 Current title: ${profile.currentTitle || 'Not provided'}
+Current company: ${profile.currentCompany || 'Not provided'}
 Years of experience: ${profile.yearsExp || 'Not specified'}
-Key skills: ${profile.skills || 'Not provided'}
+Seniority: ${profile.seniorityLevel || 'Not specified'}
+Technical skills: ${profile.technicalSkills || profile.skills || 'Not provided'}
+Soft skills: ${profile.softSkills || ''}
+Education: ${profile.education || 'Not provided'}
+Certifications: ${profile.certifications || ''}
+Industry background: ${profile.industryBackground || ''}
+Languages: ${profile.languages || ''}
+Notice period: ${profile.noticePeriod || 'Not specified'}
 Location: ${[profile.city, profile.country].filter(Boolean).join(', ') || 'Not provided'}
 Nationality: ${profile.nationality || ''}
 LinkedIn: ${profile.linkedinUrl || ''}
+GitHub: ${profile.githubUrl || ''}
+Portfolio: ${profile.portfolioUrl || ''}
 Professional summary: ${profile.summary || 'Not provided'}
 ${profile.coverTemplate ? `Tone/style notes from candidate: ${profile.coverTemplate}` : ''}` : `
 Candidate profile: Not filled in yet. Write a placeholder email using only the job details, and add a [YOUR NAME] placeholder.`;
