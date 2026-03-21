@@ -1,4 +1,4 @@
-const CACHE = 'fursa-v3';
+const CACHE = 'fursa-v4';
 const ASSETS = ['/', '/index.html', '/css/style.css', '/js/ai.js', '/js/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
