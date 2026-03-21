@@ -128,7 +128,7 @@ Return ONLY a raw JSON object. No markdown, no code fences, no explanation. Doub
   "city": "string or null",
   "country": "string or null",
   "nationality": "string or null",
-  "languages": "comma-separated languages with proficiency e.g. Arabic (Native), English (Fluent) or null",
+  "languages": [{"language":"Arabic","level":"Native"},{"language":"English","level":"Fluent"}],
   "currentTitle": "most recent job title or null",
   "currentCompany": "most recent employer name or null",
   "yearsExp": "total years of professional experience as a number e.g. 4 or null",
@@ -143,7 +143,10 @@ Return ONLY a raw JSON object. No markdown, no code fences, no explanation. Doub
   "githubUrl": "GitHub URL if present or null",
   "portfolioUrl": "portfolio or personal website URL if present or null",
   "summary": "2-sentence professional summary based on the CV or null",
-  "confidenceScore": "how complete and readable the CV was as a decimal 0.0 to 1.0 or null"
+  "confidenceScore": "how complete and readable the CV was as a decimal 0.0 to 1.0 or null",
+  "salaryExpectations": [{"amount":5000,"currency":"USD","label":"Remote roles"}],
+  "notes_on_languages": "For languages: use level values exactly: Native, Fluent, Intermediate, Basic. Only include if clearly stated or strongly implied. If uncertain, omit rather than guess.",
+  "notes_on_salary": "For salary: only extract if explicitly stated in the CV (e.g. 'expected salary', 'salary expectation'). Do NOT infer or guess. Return null array [] if nothing found."
 }`;
 
     return callGemini(system, 'Parse this CV:\n\n' + cvText.slice(0, 6000));
@@ -218,7 +221,8 @@ Soft skills: ${profile.softSkills || ''}
 Education: ${profile.education || 'Not provided'}
 Certifications: ${profile.certifications || ''}
 Industry background: ${profile.industryBackground || ''}
-Languages: ${profile.languages || ''}
+Languages: ${Array.isArray(profile.languages) ? profile.languages.map(l => `${l.language} (${l.level})`).join(', ') : (profile.languages || '')}
+Salary expectations: ${Array.isArray(profile.salaryExpectations) && profile.salaryExpectations.length ? profile.salaryExpectations.map(s => `${s.amount} ${s.currency}${s.label ? ' ('+s.label+')' : ''}`).join(', ') : 'Not specified'}
 Notice period: ${profile.noticePeriod || 'Not specified'}
 Location: ${[profile.city, profile.country].filter(Boolean).join(', ') || 'Not provided'}
 Nationality: ${profile.nationality || ''}

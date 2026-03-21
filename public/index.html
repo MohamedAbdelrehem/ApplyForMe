@@ -243,7 +243,13 @@
         <div class="fg"><label class="fl" for="pf-country">Country</label><input class="fi" id="pf-country" type="text" placeholder="Egypt" autocomplete="country-name"/></div>
       </div>
       <div class="fg"><label class="fl" for="pf-nationality">Nationality</label><input class="fi" id="pf-nationality" type="text" placeholder="Egyptian"/></div>
-      <div class="fg"><label class="fl" for="pf-languages">Languages</label><input class="fi" id="pf-languages" type="text" placeholder="Arabic (Native), English (Fluent)"/></div>
+      <div class="fg">
+        <label class="fl">Languages</label>
+        <div class="multi-builder" id="pf-languages-builder">
+          <div class="multi-rows" id="pf-languages-rows"></div>
+          <button type="button" class="multi-add-btn" onclick="addLanguageRow()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add a language</button>
+        </div>
+      </div>
     </div>
 
     <div class="sec-div"></div>
@@ -260,6 +266,13 @@
       <div class="row2">
         <div class="fg"><label class="fl" for="pf-industryBackground">Industry</label><input class="fi" id="pf-industryBackground" type="text" placeholder="Telecom, Fintech"/></div>
         <div class="fg"><label class="fl" for="pf-noticePeriod">Notice period</label><input class="fi" id="pf-noticePeriod" type="text" placeholder="1 month"/></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Expected salary</label>
+        <div class="multi-builder" id="pf-salary-builder">
+          <div class="multi-rows" id="pf-salary-rows"></div>
+          <button type="button" class="multi-add-btn" onclick="addSalaryRow()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add salary expectation</button>
+        </div>
       </div>
       <div class="fg"><label class="fl" for="pf-technicalSkills">Technical skills</label><input class="fi" id="pf-technicalSkills" type="text" placeholder="Python, Playwright, Selenium, ISTQB"/></div>
       <div class="fg"><label class="fl" for="pf-softSkills">Soft skills</label><input class="fi" id="pf-softSkills" type="text" placeholder="Communication, Problem-solving"/></div>

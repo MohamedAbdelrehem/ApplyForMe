@@ -1133,3 +1133,83 @@ textarea.fi { resize:none; line-height:1.5; }
   margin: 0px 2px 0;
   line-height: 1.5;
 }
+/* Salary row: amount+currency stretch full width, label below */
+.salary-row { flex-direction: column; gap: 6px; }
+.salary-row .salary-top {
+  display: flex; gap: 6px; align-items: center;
+}
+.salary-row .multi-amount { flex: 3; min-width: 0; }
+.salary-row .multi-cur    { flex: 2; min-width: 0; }
+.salary-row .multi-label  { width: 100%; }
+/* ── MULTI-ROW BUILDERS (Languages + Salary) ──────────────────── */
+.multi-builder {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.multi-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.multi-row {
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  position: relative;
+}
+.multi-row-top {
+  display: flex; align-items: center; gap: 6px;
+}
+.multi-select {
+  flex: 1; min-width: 0;
+}
+.level-pills {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.level-pill {
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1.5px solid var(--bd);
+  background: var(--s1);
+  color: var(--t2);
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  font-family: var(--fd);
+  transition: background .12s, border-color .12s, color .12s;
+  -webkit-appearance: none;
+}
+.level-pill.active {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: #fff;
+}
+.level-pill:active { opacity: .8; }
+.multi-rm {
+  background: none; border: none;
+  color: var(--t3); font-size: 20px; line-height: 1;
+  cursor: pointer; padding: 0 2px;
+  flex-shrink: 0; align-self: center;
+  transition: color .12s;
+}
+.multi-rm:active { color: var(--acc); }
+
+/* Add button — solid so it's clearly tappable */
+.multi-add-btn {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--acc);
+  border: none;
+  color: #fff;
+  font-size: 13px; font-weight: 700;
+  font-family: var(--fd);
+  padding: 11px 16px; border-radius: var(--r-sm);
+  cursor: pointer; text-align: left;
+  transition: opacity .15s;
+  -webkit-appearance: none;
+  box-shadow: 0 2px 8px rgba(200,75,47,0.18);
+  width: 100%;
+}
+.multi-add-btn:active { opacity: .82; }
+
+/* Salary: amount+currency both flex-stretch (like language select), label below */
+.salary-row { flex-direction: column; gap: 6px; }
+.salary-row .salary-top {
+  display: flex; gap: 6px; align-items: center;
+}
+/* amount gets 3 shares, currency gets 2 — both stretch to fill the row */
+.salary-row .multi-amount { flex: 3; min-width: 0; }
+.salary-row .multi-cur    { flex: 2; min-width: 0; }
+.salary-row .multi-label  { width: 100%; }

@@ -736,15 +736,123 @@ function cvRemindCancel() {
 }
 
 // ── PROFILE ───────────────────────────────────────────────────────
-const FIELDS = ['firstName','lastName','email','phone','dob','city','country','nationality','languages','currentTitle','currentCompany','yearsExp','seniorityLevel','industryBackground','noticePeriod','technicalSkills','softSkills','education','certifications','linkedinUrl','githubUrl','portfolioUrl','coverTemplate','summary'];
+const FIELDS = ['firstName','lastName','email','phone','dob','city','country','nationality','currentTitle','currentCompany','yearsExp','seniorityLevel','industryBackground','noticePeriod','technicalSkills','softSkills','education','certifications','linkedinUrl','githubUrl','portfolioUrl','coverTemplate','summary'];
+
+// ── LANGUAGES BUILDER ─────────────────────────────────────────────
+const LANG_LEVELS = ['Native','Fluent','Intermediate','Basic'];
+const POPULAR_LANGS = ['Arabic','English','French','German','Spanish','Italian','Portuguese','Dutch','Turkish','Russian','Chinese','Japanese','Korean','Hindi','Urdu','Persian','Swedish','Norwegian','Danish','Finnish','Polish','Czech','Romanian','Hungarian','Greek','Hebrew','Indonesian','Malay','Thai','Vietnamese','Bengali','Swahili'];
+
+function renderLanguageRows() {
+  const rows = document.getElementById('pf-languages-rows');
+  if (!rows) return;
+  const langs = Array.isArray(State.profile.languages) ? State.profile.languages : [];
+  rows.innerHTML = langs.map((l, i) => buildLangRow(l.language || '', l.level || 'Fluent', i)).join('');
+}
+
+function buildLangRow(lang, level, idx) {
+  const opts = POPULAR_LANGS.map(l => `<option value="${l}"${l===lang?' selected':''}>${l}</option>`).join('');
+  const levelPills = LANG_LEVELS.map(lv =>
+    `<button type="button" class="level-pill${lv===level?' active':''}" onclick="setLangLevel(${idx},'${lv}')">${lv}</button>`
+  ).join('');
+  return `<div class="multi-row" data-idx="${idx}">
+    <div class="multi-row-top">
+      <select class="fi multi-select" onchange="updateLangRow(${idx},'language',this.value)">
+        <option value="">— select language —</option>${opts}
+      </select>
+      <button type="button" class="multi-rm" onclick="removeLangRow(${idx})">×</button>
+    </div>
+    <div class="level-pills">${levelPills}</div>
+  </div>`;
+}
+
+function addLanguageRow() {
+  if (!Array.isArray(State.profile.languages)) State.profile.languages = [];
+  State.profile.languages.push({ language: '', level: 'Fluent' });
+  renderLanguageRows();
+}
+function removeLangRow(idx) {
+  State.profile.languages.splice(idx, 1);
+  renderLanguageRows();
+}
+function updateLangRow(idx, key, val) {
+  if (!Array.isArray(State.profile.languages)) return;
+  if (State.profile.languages[idx]) State.profile.languages[idx][key] = val;
+}
+function setLangLevel(idx, level) {
+  if (!Array.isArray(State.profile.languages)) return;
+  if (State.profile.languages[idx]) State.profile.languages[idx].level = level;
+  renderLanguageRows();
+}
+
+// ── SALARY BUILDER ────────────────────────────────────────────────
+// Each entry: code, symbol, local name shown in the option
+const CURRENCIES = [
+  ['USD','$','US Dollar'],['EUR','€','Euro'],['GBP','£','British Pound'],
+  ['AED','د.إ','UAE Dirham'],['SAR','﷼','Saudi Riyal'],['EGP','ج.م','Egyptian Pound'],
+  ['CAD','C$','Canadian Dollar'],['AUD','A$','Australian Dollar'],['SGD','S$','Singapore Dollar'],
+  ['QAR','ر.ق','Qatari Riyal'],['KWD','د.ك','Kuwaiti Dinar'],['BHD','BD','Bahraini Dinar'],
+  ['OMR','ر.ع','Omani Rial'],['JOD','JD','Jordanian Dinar'],['MAD','DH','Moroccan Dirham'],
+  ['TND','DT','Tunisian Dinar'],['NGN','₦','Nigerian Naira'],['ZAR','R','South African Rand'],
+  ['INR','₹','Indian Rupee'],['PKR','₨','Pakistani Rupee'],['BDT','৳','Bangladeshi Taka'],
+  ['MYR','RM','Malaysian Ringgit'],['THB','฿','Thai Baht'],['PHP','₱','Philippine Peso'],
+  ['IDR','Rp','Indonesian Rupiah'],['VND','₫','Vietnamese Dong'],['JPY','¥','Japanese Yen'],
+  ['CNY','¥','Chinese Yuan'],['KRW','₩','South Korean Won'],['SEK','kr','Swedish Krona'],
+  ['NOK','kr','Norwegian Krone'],['DKK','kr','Danish Krone'],['CHF','Fr','Swiss Franc'],
+  ['PLN','zł','Polish Zloty'],['TRY','₺','Turkish Lira'],['ILS','₪','Israeli Shekel'],
+  ['BRL','R$','Brazilian Real'],
+];
+
+function renderSalaryRows() {
+  const rows = document.getElementById('pf-salary-rows');
+  if (!rows) return;
+  const salaries = Array.isArray(State.profile.salaryExpectations) ? State.profile.salaryExpectations : [];
+  rows.innerHTML = salaries.map((s, i) => buildSalaryRow(s, i)).join('');
+}
+
+function buildSalaryRow(s, idx) {
+  const sel = s.currency || 'USD';
+  const curOpts = CURRENCIES.map(([code, sym, name]) =>
+    `<option value="${code}"${code===sel?' selected':''}>${sym} ${code} — ${name}</option>`
+  ).join('');
+  return `<div class="multi-row salary-row" data-idx="${idx}">
+    <div class="salary-top">
+      <input type="number" class="fi multi-amount" placeholder="Amount" value="${s.amount||''}" min="0" oninput="updateSalaryRow(${idx},'amount',this.value)"/>
+      <select class="fi multi-cur" onchange="updateSalaryRow(${idx},'currency',this.value)">${curOpts}</select>
+      <button type="button" class="multi-rm" onclick="removeSalaryRow(${idx})">×</button>
+    </div>
+    <input type="text" class="fi multi-label" placeholder="Context, e.g. Dubai on-site, Remote USD" value="${s.label||''}" oninput="updateSalaryRow(${idx},'label',this.value)"/>
+  </div>`;
+}
+
+function addSalaryRow() {
+  if (!Array.isArray(State.profile.salaryExpectations)) State.profile.salaryExpectations = [];
+  State.profile.salaryExpectations.push({ amount: '', currency: 'USD', label: '' });
+  renderSalaryRows();
+}
+function removeSalaryRow(idx) {
+  State.profile.salaryExpectations.splice(idx, 1);
+  renderSalaryRows();
+}
+function updateSalaryRow(idx, key, val) {
+  if (!Array.isArray(State.profile.salaryExpectations)) return;
+  if (State.profile.salaryExpectations[idx]) {
+    State.profile.salaryExpectations[idx][key] = key === 'amount' ? (parseFloat(val)||'') : val;
+  }
+}
 
 function loadProfileForm() {
   FIELDS.forEach(f=>{ const el=document.getElementById('pf-'+f); if(el&&State.profile[f]) el.value=State.profile[f]; });
   if(State.profile.cvName) showCvDone(State.profile.cvName, State.profile.cvSize||'');
+  renderLanguageRows();
+  renderSalaryRows();
 }
 
 function saveProfile() {
   FIELDS.forEach(f=>{ const el=document.getElementById('pf-'+f); if(el) State.profile[f]=el.value.trim(); });
+  if (!Array.isArray(State.profile.languages)) State.profile.languages = [];
+  if (!Array.isArray(State.profile.salaryExpectations)) State.profile.salaryExpectations = [];
+  State.profile.languages = State.profile.languages.filter(l => l.language);
+  State.profile.salaryExpectations = State.profile.salaryExpectations.filter(s => s.amount);
   State.save();
   const name=State.profile.firstName;
   if(name) document.getElementById('greeting-name').textContent=name;
@@ -780,7 +888,7 @@ async function handleCv(file) {
       firstName:parsed.firstName, lastName:parsed.lastName,
       email:parsed.email, phone:parsed.phone,
       city:parsed.city, country:parsed.country,
-      nationality:parsed.nationality, languages:parsed.languages,
+      nationality:parsed.nationality,
       currentTitle:parsed.currentTitle, currentCompany:parsed.currentCompany,
       yearsExp:parsed.yearsExp, seniorityLevel:parsed.seniorityLevel,
       industryBackground:parsed.industryBackground, noticePeriod:parsed.noticePeriod,
@@ -796,6 +904,14 @@ async function handleCv(file) {
       const el=document.getElementById('pf-'+key);
       if(el){ el.value=val; filled++; }
     });
+    if (Array.isArray(parsed.languages) && parsed.languages.length) {
+      State.profile.languages = parsed.languages.filter(l => l.language);
+      renderLanguageRows(); filled++;
+    }
+    if (Array.isArray(parsed.salaryExpectations) && parsed.salaryExpectations.length) {
+      State.profile.salaryExpectations = parsed.salaryExpectations.filter(s => s.amount);
+      renderSalaryRows(); if (State.profile.salaryExpectations.length) filled++;
+    }
     if(parsed.summary) State.profile.summary=parsed.summary;
     State.save();
     document.getElementById('cv-done').classList.remove('parsing');
@@ -816,13 +932,21 @@ async function autofillFromCv() {
   try {
     const parsed=await AI.parseCv(_lastCvFile);
     let filled=0;
-    const map={firstName:parsed.firstName,lastName:parsed.lastName,email:parsed.email,phone:parsed.phone,city:parsed.city,country:parsed.country,nationality:parsed.nationality,languages:parsed.languages,currentTitle:parsed.currentTitle,currentCompany:parsed.currentCompany,yearsExp:parsed.yearsExp,seniorityLevel:parsed.seniorityLevel,industryBackground:parsed.industryBackground,noticePeriod:parsed.noticePeriod,technicalSkills:parsed.technicalSkills,softSkills:parsed.softSkills,education:parsed.education,certifications:parsed.certifications,linkedinUrl:parsed.linkedinUrl,githubUrl:parsed.githubUrl,portfolioUrl:parsed.portfolioUrl,summary:parsed.summary};
+    const map={firstName:parsed.firstName,lastName:parsed.lastName,email:parsed.email,phone:parsed.phone,city:parsed.city,country:parsed.country,nationality:parsed.nationality,currentTitle:parsed.currentTitle,currentCompany:parsed.currentCompany,yearsExp:parsed.yearsExp,seniorityLevel:parsed.seniorityLevel,industryBackground:parsed.industryBackground,noticePeriod:parsed.noticePeriod,technicalSkills:parsed.technicalSkills,softSkills:parsed.softSkills,education:parsed.education,certifications:parsed.certifications,linkedinUrl:parsed.linkedinUrl,githubUrl:parsed.githubUrl,portfolioUrl:parsed.portfolioUrl,summary:parsed.summary};
     Object.entries(map).forEach(([key,val])=>{
       if(!val) return;
       State.profile[key]=val;
       const el=document.getElementById('pf-'+key);
       if(el){ el.value=val; filled++; }
     });
+    if (Array.isArray(parsed.languages) && parsed.languages.length) {
+      State.profile.languages = parsed.languages.filter(l => l.language);
+      renderLanguageRows(); filled++;
+    }
+    if (Array.isArray(parsed.salaryExpectations) && parsed.salaryExpectations.length) {
+      State.profile.salaryExpectations = parsed.salaryExpectations.filter(s => s.amount);
+      renderSalaryRows(); if (State.profile.salaryExpectations.length) filled++;
+    }
     if(parsed.summary) State.profile.summary=parsed.summary;
     State.save(); toast(filled+' fields filled from CV!');
   } catch(err){ console.error(err); toast('Could not parse CV: '+err.message); }
@@ -1055,7 +1179,7 @@ async function profileGateCvChange(file) {
       firstName: parsed.firstName, lastName:      parsed.lastName,
       email:     parsed.email,     phone:         parsed.phone,
       city:      parsed.city,      country:       parsed.country,
-      nationality: parsed.nationality, languages:   parsed.languages,
+      nationality: parsed.nationality,
       currentTitle: parsed.currentTitle, currentCompany: parsed.currentCompany,
       yearsExp:  parsed.yearsExp,  seniorityLevel: parsed.seniorityLevel,
       industryBackground: parsed.industryBackground, noticePeriod: parsed.noticePeriod,
@@ -1065,6 +1189,12 @@ async function profileGateCvChange(file) {
       portfolioUrl: parsed.portfolioUrl, summary:   parsed.summary
     };
     Object.entries(map).forEach(([k, v]) => { if (v) State.profile[k] = v; });
+    if (Array.isArray(parsed.languages) && parsed.languages.length) {
+      State.profile.languages = parsed.languages.filter(l => l.language);
+    }
+    if (Array.isArray(parsed.salaryExpectations) && parsed.salaryExpectations.length) {
+      State.profile.salaryExpectations = parsed.salaryExpectations.filter(s => s.amount);
+    }
     State.profile.cvName = file.name;
     State.profile.cvSize = sz;  // fixes "Uploading…" shown after gate CV parse
     State.save();

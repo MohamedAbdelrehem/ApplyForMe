@@ -339,6 +339,23 @@
       </div>
     </div>
 
+    <!-- ── PROFILE ANALYTICS ── -->
+    <div class="stats-section" id="profile-analytics" style="display:none">
+      <div class="panel-hdr">Profile Analytics</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+        <!-- Language frequency table -->
+        <div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:14px">
+          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;margin-bottom:10px">Language distribution</div>
+          <div id="lang-freq-table" style="font-size:13px"></div>
+        </div>
+        <!-- Salary distribution -->
+        <div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:14px">
+          <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;margin-bottom:10px">Salary expectations</div>
+          <div id="salary-dist-table" style="font-size:13px"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="tab-row">
       <button class="tab-btn active" onclick="switchTab('users')"  id="tab-users">Users</button>
       <button class="tab-btn"        onclick="switchTab('events')" id="tab-events">Live Events</button>
@@ -475,6 +492,7 @@ window.checkPw = async () => {
     _allUsers = (data.users || []).sort((a,b) => (b.lastActiveAt||0) - (a.lastActiveAt||0));
     updateStats();
     renderTable(_allUsers);
+    renderProfileAnalytics(_allUsers);
     document.getElementById('user-count-lbl').textContent = _allUsers.length + ' total';
 
     // FIX #2: load events+guests properly and update sidebar event list
@@ -519,6 +537,7 @@ window.loadAll = async () => {
     _allGuests = (await gRes.json()).guests || [];
     updateStats();
     renderTable(_allUsers);
+    renderProfileAnalytics(_allUsers);
     renderEvents(_allEvents, 'event-list');
     renderEventsFullTab();
     renderGuests();
@@ -628,6 +647,70 @@ function diff(tw, lw) {
 // ════════════════════════════════════════════════════════════════
 // USERS TABLE
 // ════════════════════════════════════════════════════════════════
+function renderProfileAnalytics(users) {
+  const allUsers = [...(users || []), ...(window._allGuests || [])];
+  if (!allUsers.length) return;
+
+  // ── Language frequency ────────────────────────────────────────
+  const langCount = {};
+  allUsers.forEach(u => {
+    const langs = u._p?.languages || u._d?.languages || u.languages;
+    if (Array.isArray(langs)) {
+      langs.forEach(l => { if (l.language) langCount[l.language] = (langCount[l.language]||0) + 1; });
+    } else if (typeof langs === 'string' && langs) {
+      // backward compat: "Arabic (Native), English (Fluent)"
+      langs.split(',').forEach(seg => {
+        const name = seg.trim().replace(/\s*\(.*?\)/, '').trim();
+        if (name) langCount[name] = (langCount[name]||0) + 1;
+      });
+    }
+  });
+  const langSorted = Object.entries(langCount).sort((a,b) => b[1]-a[1]);
+  const langEl = document.getElementById('lang-freq-table');
+  if (langEl) {
+    langEl.innerHTML = langSorted.length ? langSorted.map(([lang, count]) => {
+      const pct = Math.round((count / allUsers.length) * 100);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+        <span style="min-width:80px;color:var(--t1)">${_e(lang)}</span>
+        <div style="flex:1;height:6px;background:var(--s3);border-radius:99px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:var(--acc);border-radius:99px"></div>
+        </div>
+        <span style="min-width:28px;text-align:right;color:var(--t3);font-size:11px">${count}</span>
+      </div>`;
+    }).join('') : '<div style="color:var(--t3)">No data yet</div>';
+  }
+
+  // ── Salary distribution by currency ──────────────────────────
+  const salaryByCur = {}; // { USD: [5000, 7000, ...], EGP: [...] }
+  allUsers.forEach(u => {
+    const sals = u._p?.salaryExpectations || u._d?.salaryExpectations || u.salaryExpectations;
+    if (Array.isArray(sals)) {
+      sals.forEach(s => {
+        if (!s.amount || !s.currency) return;
+        const cur = s.currency;
+        if (!salaryByCur[cur]) salaryByCur[cur] = [];
+        salaryByCur[cur].push(Number(s.amount));
+      });
+    }
+  });
+  const salEl = document.getElementById('salary-dist-table');
+  const curEntries = Object.entries(salaryByCur).sort((a,b) => b[1].length - a[1].length);
+  if (salEl) {
+    salEl.innerHTML = curEntries.length ? curEntries.map(([cur, amounts]) => {
+      const avg = Math.round(amounts.reduce((a,b)=>a+b,0) / amounts.length);
+      const mn  = Math.min(...amounts);
+      const mx  = Math.max(...amounts);
+      return `<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="min-width:44px;font-weight:700;color:var(--t1)">${_e(cur)}</span>
+        <span style="color:var(--t2)">avg <b>${avg.toLocaleString()}</b></span>
+        <span style="color:var(--t3);font-size:11px">${mn.toLocaleString()} – ${mx.toLocaleString()} · ${amounts.length} user${amounts.length>1?'s':''}</span>
+      </div>`;
+    }).join('') : '<div style="color:var(--t3)">No data yet</div>';
+  }
+
+  document.getElementById('profile-analytics').style.display = '';
+}
+
 function renderTable(users) {
   const wrap = document.getElementById('table-wrap');
   if (!users.length) { wrap.innerHTML=`<div class="empty">No users found.</div>`; return; }
@@ -832,6 +915,16 @@ window.openGuestDetail = (gid) => {
       ${kv('Email',     p.email || p.authEmail || '—')}
       ${kv('Phone',     p.phone       || '—')}
       ${kv('Location',  [p.city,p.country].filter(Boolean).join(', ')||'—')}
+      ${kv('Languages', (() => {
+        if (Array.isArray(p.languages) && p.languages.length)
+          return p.languages.map(l => `${_e(l.language)} <span style="font-size:10px;background:var(--s3);padding:2px 6px;border-radius:99px">${_e(l.level||'')}</span>`).join('  ');
+        return _e(p.languages || '—');
+      })())}
+      ${kv('Expected salary', (() => {
+        if (Array.isArray(p.salaryExpectations) && p.salaryExpectations.length)
+          return p.salaryExpectations.map(s => `${s.amount ? Number(s.amount).toLocaleString() : '?'} ${_e(s.currency||'')}${s.label ? ' <span style="color:var(--t3);font-size:11px">('+_e(s.label)+')</span>' : ''}`).join('<br>');
+        return '—';
+      })())}
       ${kv('Guest ID',  `<span style="font-size:10px;color:var(--t3)">${_e(gid.slice(0,24))}…</span>`)}
     </div>
     <div class="dp-section">
@@ -907,7 +1000,16 @@ window.openDetail = (uid) => {
       ${kv('LinkedIn',    p.linkedinUrl ? `<a href="${_e(p.linkedinUrl.startsWith('http') ? p.linkedinUrl : 'https://' + p.linkedinUrl)}" target="_blank">View →</a>` : '—')}
       ${kv('GitHub',      p.githubUrl ? `<a href="${_e(p.githubUrl.startsWith('http') ? p.githubUrl : 'https://' + p.githubUrl)}" target="_blank">View →</a>` : '—')}
       ${kv('Portfolio',   p.portfolioUrl ? `<a href="${_e(p.portfolioUrl.startsWith('http') ? p.portfolioUrl : 'https://' + p.portfolioUrl)}" target="_blank">View →</a>` : '—')}
-      ${kv('Languages',   p.languages || '—')}
+      ${kv('Languages',   (() => {
+        if (Array.isArray(p.languages) && p.languages.length)
+          return p.languages.map(l => `${_e(l.language)} <span style="font-size:10px;background:var(--s3);padding:2px 6px;border-radius:99px">${_e(l.level||'')}</span>`).join('  ');
+        return _e(p.languages || '—');
+      })())}
+      ${kv('Expected salary', (() => {
+        if (Array.isArray(p.salaryExpectations) && p.salaryExpectations.length)
+          return p.salaryExpectations.map(s => `${s.amount ? Number(s.amount).toLocaleString() : '?'} ${_e(s.currency||'')}${s.label ? ' <span style="color:var(--t3);font-size:11px">('+_e(s.label)+')</span>' : ''}`).join('<br>');
+        return '—';
+      })())}
       ${kv('Auth UID',    `<span style="font-size:10px;color:var(--t3)">${_e(uid)}</span>`)}
     </div>
     <div class="dp-section">
