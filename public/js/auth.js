@@ -55,9 +55,10 @@ function getGuestId() {
 
 // ── AUTH MODULE ───────────────────────────────────────────────────
 const Auth = (() => {
-  let _user         = null;
-  let _syncDebounce = null;
-  let _dirty        = false;  // true only when data has changed since last cloud push
+  let _user          = null;
+  let _syncDebounce  = null;
+  let _dirty         = false;  // true only when data has changed since last cloud push
+  let _userDocExists = false;  // true once _pullFromCloud confirms createdAt exists in Firestore
 
   // In-memory event buffer — events accumulate here and are flushed
   // once per session (on visibilitychange/pagehide) as a single write.
@@ -195,12 +196,10 @@ const Auth = (() => {
       const { doc, setDoc, serverTimestamp } = dbMod;
       const ts = serverTimestamp();
 
-      // Guard createdAt with a localStorage flag per UID so it is written
-      // exactly once and never overwritten on subsequent logins.
-      // merge:true does NOT protect fields you explicitly include in the
-      // payload — it only skips fields missing from the payload entirely.
-      const firstWriteKey = `fursa_joined_${uid()}`;
-      const isFirstWrite  = !localStorage.getItem(firstWriteKey);
+      // Only include createdAt when the Firestore root doc doesn't have one yet.
+      // _userDocExists is set by _pullFromCloud (which always runs before
+      // _pushToCloud on sign-in) by reading the actual root doc from Firestore.
+      // This is cross-device safe — no localStorage dependency.
       const rootPayload = {
         email:        State.profile.authEmail || '',
         displayName:  [State.profile.firstName, State.profile.lastName].filter(Boolean).join(' '),
@@ -209,7 +208,10 @@ const Auth = (() => {
         sentCount:    State.stats.sent || 0,
         lastActiveAt: ts,
       };
-      if (isFirstWrite) rootPayload.createdAt = ts;
+      if (!_userDocExists) {
+        rootPayload.createdAt = ts;
+        _userDocExists = true; // prevent repeat writes within the same session
+      }
 
       await Promise.all([
         setDoc(doc(db, `users/${uid()}/profile/main`), { ...State.profile, updatedAt: ts }, { merge: true }),
@@ -220,8 +222,6 @@ const Auth = (() => {
         }, { merge: true }),
         setDoc(doc(db, `users/${uid()}`), rootPayload, { merge: true }),
       ]);
-
-      if (isFirstWrite) localStorage.setItem(firstWriteKey, '1');
       _dirty = false;  // reset after successful push
     } catch(e) { console.warn('[Fursa] cloud push failed:', e.message); }
   }
@@ -231,10 +231,18 @@ const Auth = (() => {
     try {
       const { db, dbMod } = await ensureFirebase();
       const { doc, getDoc } = dbMod;
-      const [pSnap, dSnap] = await Promise.all([
+      const [rootSnap, pSnap, dSnap] = await Promise.all([
+        getDoc(doc(db, `users/${uid()}`)),           // root doc — check createdAt
         getDoc(doc(db, `users/${uid()}/profile/main`)),
         getDoc(doc(db, `users/${uid()}/data/main`)),
       ]);
+
+      // Cache whether this user already has a createdAt in Firestore.
+      // _pushToCloud reads this flag to decide whether to write it.
+      // This is the only reliable cross-device way — localStorage breaks
+      // when the user logs in on a second device for the first time.
+      _userDocExists = rootSnap.exists() && !!rootSnap.data()?.createdAt;
+
       if (pSnap.exists()) {
         // Cloud wins for all profile fields — except auth fields which are
         // always set from the live Firebase Auth object in _onSignedIn().
