@@ -1,31 +1,4 @@
 // api/admin.js — Vercel Serverless Function
-// Uses Firebase Admin SDK (service account) — Firestore rules don't apply here.
-// Set these env vars in Vercel dashboard:
-//   ADMIN_PASSWORD      — your admin password
-//   FIREBASE_PROJECT_ID — e.g. fursa-apply
-//   FIREBASE_CLIENT_EMAIL — from service account JSON
-//   FIREBASE_PRIVATE_KEY  — from service account JSON (include the \n newlines)
-//
-// ── FIRESTORE SECURITY RULES REQUIRED ────────────────────────────────────────
-// Add these rules to your Firestore console to lock down the guests collection.
-// Guests write their own data (by guestId stored in localStorage), no one reads it
-// client-side — only the Admin SDK (this file) reads it server-side.
-//
-// rules_version = '2';
-// service cloud.firestore {
-//   match /databases/{database}/documents {
-//     match /users/{uid}/{document=**} {
-//       allow read, write: if request.auth != null && request.auth.uid == uid;
-//     }
-//     match /guests/{gid}/{document=**} {
-//       // Guests can write their own doc by matching their localStorage guestId.
-//       // No client-side reads — admin reads via SDK which bypasses these rules.
-//       allow write: if true;   // guestId is a UUID — unguessable by others
-//       allow read:  if false;  // only Admin SDK reads guest data
-//     }
-//   }
-// }
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore }                  from 'firebase-admin/firestore';
